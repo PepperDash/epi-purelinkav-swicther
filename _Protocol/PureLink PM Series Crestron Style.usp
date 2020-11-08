@@ -1,0 +1,283 @@
+                                 /*******************************************************************************************
+  SIMPL+ Module Information
+  (Fill in comments below)
+*******************************************************************************************/
+/*
+Dealer Name:	Avitecture
+System Name: 	
+System Number:		
+Programmer:		Andrew Knous
+Comments:		
+*/
+
+/* Compiler Directives */
+
+// #ENABLE_DYNAMIC
+#SYMBOL_NAME "PureLink PM Series Crestron Style"
+// #HINT ""
+// #DEFINE_CONSTANT
+// #CATEGORY  // Custom
+#PRINT_TO_TRACE
+#DEFAULT_VOLATILE
+#ENABLE_STACK_CHECKING
+#ENABLE_TRACE
+/*
+#HELP_BEGIN
+   (add additional lines of help lines)
+#HELP_END
+*/
+
+
+/* I/O */
+BUFFER_INPUT Device_rx$[500];
+DIGITAL_INPUT _SKIP_, Debug_On;
+ANALOG_INPUT _SKIP_,_SKIP_, Video_Output[64], _SKIP_, Audio_Output[64]; 
+ 
+                 
+// DIGITAL_OUTPUT
+STRING_OUTPUT _SKIP_, _SKIP_,Device_tx$, Debug$;
+ANALOG_OUTPUT _SKIP_, Video_Output_F[64], _SKIP_, Audio_Output_F[64];
+
+
+
+
+INTEGER_PARAMETER Router_ID;    
+
+#BEGIN_PARAMETER_PROPERTIES Router_ID
+   propValidUnits = unitDecimal;
+   // propDefaultUnit = // unitString, unitDecimal, unitHex, unitPercent, unitCharacter, unitTime or unitTicks;
+   // propBounds = lower_bound , upper_bound;
+   propDefaultValue = 255d;
+   propShortDescription = "255 is factory defualt ID. 999 is universal ID";
+   // #BEGIN_PROP_FULL_DESCRIPTION  line_1...  line_2...  line_n  #END_PROP_FULL_DESCRIPTION
+   // #BEGIN_PROP_NOTES line_1...  line_2...  line_n  #END_PROP_NOTES
+#END_PARAMETER_PROPERTIES
+
+
+/*Functions*/
+
+FUNCTION ProcessResponse()
+{
+ 	STRING Temp$[20];
+	STRING Trash$[20];
+	STRING ResponseString$[20];
+	STRING inputString$[20];
+	STRING outputString$[20];
+	STRING switchTypeString$[20];
+	integer inputValue, outputValue;
+	
+	if(Debug_On) Debug$ = "In ProcessResponse Function";
+	if(Debug_On) MakeString(Debug$, "Response = %s", Device_rx$);
+
+	While(len(Device_rx$) > 0)
+	{
+
+		if (Find("!", Device_rx$))
+		{
+			Temp$ = Remove("!", Device_rx$);
+
+			ResponseString$ = Right(Temp$, 11);
+			if(Debug_On) MakeString(Debug$,"Processing response: %s", ResponseString$);
+
+        	outputString$ = Mid(ResponseString$, 8, 2);
+			if(Debug_On) MakeString(Debug$,"Processing output: %s", outputString$);
+
+			inputString$ = Mid(ResponseString$, 5, 2);
+			if(Debug_On) MakeString(Debug$,"Processing input: %s", inputString$);
+
+			switchTypeString$ = Left(ResponseString$, 2);
+			if(Debug_On) MakeString(Debug$,"Processing type: %s", switchTypeString$);
+
+			inputValue = ATOI(inputString$);
+			if(Debug_On) MakeString(Debug$,"Input Value: %u", inputValue);
+			outputValue = ATOI(outputString$);
+            if(Debug_On) MakeString(Debug$,"Out Value: %u", outputValue);
+
+			if (switchTypeString$ = "VC")
+			{
+				if(Debug_On) Debug$ = "Processing Video switch feedback";
+         		Video_Output_F[outputValue] = inputValue;
+			}
+			else if (switchTypeString$ = "AC")
+			{
+				if(Debug_On) Debug$ = "Processing Audio switch feedback";
+         		Audio_Output_F[outputValue] = inputValue;
+			}	
+		}
+
+		else
+		{
+			clearbuffer(Device_Rx$);
+		}								
+	}       
+}
+
+
+FUNCTION SendCommand(integer inputValue, integer outputValue, string switchType$)
+{
+
+	string inputString$[10], outputString$[10];
+	
+	
+	if (inputValue = 0)
+	{
+		inputString$ = "00";
+	}
+    else if (inputValue = 1)
+	{
+		inputString$ = "01";
+	}
+	else if (inputValue = 2)
+	{
+		inputString$ = "02";
+	}
+    else if (inputValue = 3)
+	{
+		inputString$ = "03";
+	}
+    else if (inputValue = 4)
+	{
+		inputString$ = "04";
+	}
+    else if (inputValue = 5)
+	{
+		inputString$ = "05";
+	}
+    else if (inputValue = 6)
+	{
+		inputString$ = "06";
+	}
+    else if (inputValue = 7)
+	{
+		inputString$ = "07";
+	}
+    else if (inputValue = 8)
+	{
+		inputString$ = "08";
+	}
+    else if (inputValue = 9)
+	{
+		inputString$ = "09";		
+	}
+    else 
+	{
+		inputString$ = ITOA(inputValue);
+	} 
+
+	if (outputValue = 0)
+	{
+		outputString$ = "00";
+	}
+    else if (outputValue = 1)
+	{
+		outputString$ = "01";
+	}
+	else if (outputValue = 2)
+	{
+		outputString$ = "02";
+	}
+    else if (outputValue = 3)
+	{
+		outputString$ = "03";
+	}
+    else if (outputValue = 4)
+	{
+		outputString$ = "04";
+	}
+    else if (outputValue = 5)
+	{
+		outputString$ = "05";
+	}
+    else if (outputValue = 6)
+	{
+		outputString$ = "06";
+	}
+    else if (outputValue = 7)
+	{
+		outputString$ = "07";
+	}
+    else if (outputValue = 8)
+	{
+		outputString$ = "08";
+	}
+    else if (outputValue = 9)
+	{
+		outputString$ = "09";		
+	}
+    else 
+	{
+		outputString$ = ITOA(outputValue);
+	}
+		 
+	if (switchType$ = "video")
+	{
+        Makestring(Device_tx$, "*%uVCI%sO%s!\x0d\x0a", Router_ID, inputString$, outputString$);
+		ProcessResponse();
+	}
+	
+	else if (switchType$ = "audio")
+	{
+        Makestring(Device_tx$, "*%uACI%sO%s!\x0d\x0a", Router_ID, inputString$, outputString$);
+		ProcessResponse();
+	}
+
+
+}
+
+CHANGE Device_Rx$
+{
+
+	if(Debug_On) Debug$ = "ResponseReceived";
+	ProcessResponse();
+}
+
+
+
+CHANGE Video_Output
+{
+    integer changedVideoOutput;
+	integer changedVideoInputValue;
+	string switchType$[20];
+	switchType$ = "video";
+ 	changedVideoOutput = GetLastModifiedArrayIndex();
+	changedVideoInputValue = Video_Output[changedVideoOutput];
+	SendCommand(changedVideoInputValue, changedVideoOutput, switchType$);
+}
+
+CHANGE Audio_Output
+{
+    integer changedAudioOutput;
+	integer changedAudioInputValue;
+	string switchType$[20];
+	switchType$ = "audio";
+	changedAudioOutput = GetLastModifiedArrayIndex();
+	changedAudioInputValue = Audio_Output[changedAudioOutput];
+	SendCommand(changedAudioInputValue, changedAudioOutput, switchType$);
+}
+
+
+
+/*
+SOCKETRECEIVE
+{
+    // TODO:  Add code here
+}
+*/
+
+/*
+SOCKETSTATUS
+{
+    // TODO:  Add code here
+}
+*/
+
+/* Main() */
+
+
+Function Main()
+{
+     
+    WaitForInitializationComplete();
+}
+
+

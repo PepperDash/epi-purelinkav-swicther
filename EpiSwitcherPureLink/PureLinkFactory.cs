@@ -27,7 +27,20 @@ namespace EssentialsPluginTemplateEPI
         {
             Debug.Console(1, "Factory Attempting to create new device from type: {0}", dc.Type);
 
+            var comms = CommFactory.CreateCommForDevice(dc);
+            if (comms == null)
+            {
+                Debug.Console(2, "[{0}] PureLinkFactory: Failed to create comms for {1}", dc.Key, dc.Name);
+                return null;
+            }
+
             var propertiesConfig = dc.Properties.ToObject<EssentialsPluginConfigObjectTemplate>();
+            if (propertiesConfig == null)
+            {
+                Debug.Console(2, "[{0}] PureLinkFactory: Failed to read properties config for {1}", dc.Key, dc.Name);
+                return null;
+            }
+            
             return new EssentialsPluginDeviceTemplate(dc.Key, dc.Name, propertiesConfig);
         }
 
