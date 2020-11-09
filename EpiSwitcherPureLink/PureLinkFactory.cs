@@ -3,17 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Crestron.SimplSharp;
-
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
-
 using Newtonsoft.Json;
 
-namespace EssentialsPluginTemplateEPI
+namespace EpiSwitcherPureLink
 {
-    public class EssentialsPluginFactoryTemplate : EssentialsPluginDeviceFactory<EssentialsPluginDeviceTemplate>
+    public class PurelinkFactory : EssentialsPluginDeviceFactory<PureLinkDevice>
     {
-        public EssentialsPluginFactoryTemplate()
+        public PurelinkFactory()
         {
             // Set the minimum Essentials Framework Version
             MinimumEssentialsFrameworkVersion = "1.6.6";
@@ -34,15 +32,14 @@ namespace EssentialsPluginTemplateEPI
                 return null;
             }
 
-            var propertiesConfig = dc.Properties.ToObject<EssentialsPluginConfigObjectTemplate>();
+            var propertiesConfig = dc.Properties.ToObject<PureLinkConfig>();
             if (propertiesConfig == null)
             {
                 Debug.Console(2, "[{0}] PureLinkFactory: Failed to read properties config for {1}", dc.Key, dc.Name);
                 return null;
             }
             
-            return new EssentialsPluginDeviceTemplate(dc.Key, dc.Name, propertiesConfig);
+            return new PureLinkDevice(dc.Key, dc.Name, propertiesConfig);
         }
-
     }
 }

@@ -5,9 +5,9 @@ using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
 using PepperDash.Core;
 
-namespace EssentialsPluginTemplateEPI 
+namespace EpiSwitcherPureLink 
 {
-	public class EssentialsPluginDeviceTemplate : EssentialsBridgeableDevice
+	public class PureLinkDevice : EssentialsBridgeableDevice
 	{
         /// <summary>
         /// "*999?version!" - Check firmware version
@@ -38,9 +38,9 @@ namespace EssentialsPluginTemplateEPI
         private GenericCommunicationMonitor _commsMonitor;
         private CommunicationGather _commsGather;
 
-	    private EssentialsPluginConfigObjectTemplate _config;
+	    private PureLinkConfig _config;
 
-		public EssentialsPluginDeviceTemplate(string key, string name, EssentialsPluginConfigObjectTemplate config)
+		public PureLinkDevice(string key, string name, PureLinkConfig config)
 			: base(key, name)
 		{
             Debug.Console(0, this, "Constructing new EssentialsPluginDeviceTemplate instance");
@@ -51,7 +51,7 @@ namespace EssentialsPluginTemplateEPI
 
 	    public override void LinkToApi(BasicTriList trilist, uint joinStart, string joinMapKey, EiscApiAdvanced bridge)
 	    {
-	        var joinMap = new EssentialsPluginBridgeJoinMapTemplate(joinStart);
+	        var joinMap = new PureLinkBridgeJoinMap(joinStart);
 
 	        // This adds the join map to the collection on the bridge
 	        if (bridge != null)

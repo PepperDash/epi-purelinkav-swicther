@@ -96,12 +96,14 @@
     <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PureLinkEntryConfig.cs" />
     <Compile Include="PureLinkBridgeJoinMap.cs" />
     <Compile Include="PureLinkDevice.cs" />
     <Compile Include="PureLinkConfig.cs" />
     <Compile Include="PureLinkFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="Properties\ControlSystem.cfg" />
+    <None Include="pure-link-configurationFile.json" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
   <PropertyGroup>

@@ -40,15 +40,13 @@
 							"password": ""
 						}
 					},
-					"pollTime": 60000,
-					"warningTimeout": 120000,
-					"errorTimeout": 180000,
-					"videoLevel": "V",
-					"audioLevel":"A",
-					"usbLevel": "C",
+                    "pollTimeMs": 60000,
+                    "pollString": "*255H000!",
+					"warningTimeoutMs": 120000,
+                    "errorTimeoutMs": 180000,
+                    "deviceId": 255,
 					"audioFollowsVideo": false,
-					"usbFollowsVideo": false,
-					"input": {
+					"inputs": {
 						"1":{
 							"name": "Input 1"
 						},
@@ -60,9 +58,12 @@
 						},
 						"4":{
 							"name": "Input 4"
+                        },
+                        "5":{
+							"name": "Input 5"
 						}
 					},
-					"destinations":{
+					"outputs":{
 						"1":{
 							"name": "Output 1"
 						},
@@ -74,6 +75,9 @@
 						},
 						"4":{
 							"name": "Output 4"
+                        },
+                        "5":{
+							"name": "Input 5"
 						}
 					}
 				}
