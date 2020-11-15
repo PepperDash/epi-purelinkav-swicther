@@ -19,7 +19,8 @@ namespace PureLinkPlugin
 	/// "EssentialsPluginDeviceTemplate" renamed to "SamsungMdcDevice"
 	/// </example>
 	public class PureLinkDevice : EssentialsBridgeableDevice
-	{
+    {
+        #region Constants
         /// <summary>
         /// "*999?version!" - Check firmware version
         /// "*999I000!" - Check ruoters ID
@@ -44,14 +45,10 @@ namespace PureLinkPlugin
         private const string DisconnectBothAVChar = "D";
         private const string DisconnectAudioChar = "AD";
         private const string DisconnectVideoChar = "VD";
+        private PureLinkConfig _config; // It is often desirable to store the config
+        #endregion Constants
 
-
-		/// <summary>
-		/// It is often desirable to store the config
-		/// </summary>
-		private PureLinkConfig _config;
-
-		#region IBasicCommunication Properties and Constructor.  Remove if not needed.
+		#region IBasicCommunication Properties and Constructor
 
 		// TODO [X] Add, modify, remove properties and fields as needed for the plugin being developed
 		private readonly IBasicCommunication _comms;
@@ -147,7 +144,7 @@ namespace PureLinkPlugin
 
             // Consider enforcing default poll values IF NOT DEFINED in the JSON config
 		    if (string.IsNullOrEmpty(_config.PollString))
-		        _config.PollString = "something";
+                _config.PollString = "*999?version!";
 
 		    if (_config.PollTimeMs == 0 )
 		        _config.PollTimeMs = 45000;
@@ -177,9 +174,7 @@ namespace PureLinkPlugin
 				Connect = true;
 			}
 
-			#region Communication data event handlers.  Comment out any that don't apply to the API type
-
-			// TODO [X] Only one of the below handlers should be necessary, remove the unused handler as needed                       			
+			#region Communication data event handlers.  Comment out any that don't apply to the API type                      			
 
 			// _comms gather for ASCII based API's that have a defined delimiter
 			_commsGather = new CommunicationGather(_comms, CommsDelimiter);
@@ -257,11 +252,11 @@ namespace PureLinkPlugin
 		// TODO [X] If using an API with a delimeter, keep the method below
 		private void Handle_LineRecieved(object sender, GenericCommMethodReceiveTextArgs args)
 		{
-			// TODO [ ] Implement method 
+			// TODO [ ] Implement method, introduce parsing routines here
 			throw new System.NotImplementedException();
 		}
 
-		// TODO [ ] Delete below if not using ASCII based API
+		// TODO [X] Delete below if not using ASCII based API
 		/// <summary>
 		/// Sends text to the device plugin comms
 		/// </summary>
@@ -285,12 +280,10 @@ namespace PureLinkPlugin
 		public void Poll()
 		{
 			// TODO [ ] Update Poll method as needed for the plugin being developed
-			// Example: SendText("getStatus");
-			throw new System.NotImplementedException();
+            SendText(_config.PollString);
 		}
 
 		#endregion IBasicCommunication Properties and Constructor.  Remove if not needed.
-
 
 		#region Overrides of EssentialsBridgeableDevice
 
@@ -334,12 +327,12 @@ namespace PureLinkPlugin
 			OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);                                           
             AudioFollowsVideoFeedback.LinkInputSig(trilist.BooleanInput[joinMap.AudioFollowsVideo.JoinNumber]);
 
-            // Need to update poll method
-            // Reference your poll string in your poll method
-            // Need execute switch > determine input or output number > then sendText()
-            // Parsing will be done in handlelinereceived
+            // TODO [X] Need to update poll method
+            // TODO [X] Reference your poll string in your poll method
+            // TODO [ ] Need execute switch > determine input or output number > then sendText()
+            // TODO [ ] Add parsing routines within the handlelinereceived
 
-            // Create FOREACH loops to update the bridge
+            // TODO [X] Create FOREACH loop(s) to update the bridge
             // Need to find the Crestron trilist join array value. Once array join is found your starting with a value of 1 already so account for this by minus 1
             foreach (var item in OutputVideoNameFeedbacks)
             {
@@ -364,6 +357,10 @@ namespace PureLinkPlugin
             #endregion links to bridge
         }
 
+        /// <summary>
+        /// Set the value of the Audio Follows Video
+        /// </summary>
+        /// <param name="state">Method takes single bool parameter to force SetAudioFollowsVideo</param>
 	    private void SetAudioFollowsVideo(bool state)
 	    {
 	        //Set the value of Audio Follows Video
@@ -372,10 +369,13 @@ namespace PureLinkPlugin
             AudioFollowsVideoFeedback.FireUpdate();
 	    }
 
+        /// <summary>
+        /// Void Method that updates Feedbacks which updates Bridge
+        /// </summary>
 	    private void UpdateFeedbacks()
 		{
-			// TODO [ ] Update as needed for the plugin being developed
-            // 
+			// TODO [Z] Update as needed for the plugin being developed
+            
 			ConnectFeedback.FireUpdate();
 			OnlineFeedback.FireUpdate();
 			StatusFeedback.FireUpdate();
@@ -385,18 +385,139 @@ namespace PureLinkPlugin
                 item.Value.FireUpdate();
             foreach (var item in OutputAudioNameFeedbacks)
                 item.Value.FireUpdate();
-
-            //foreach (var item in CurrentVideoInputValueFeedbacks)
-            //    item.Value.FireUpdate();
-            //foreach (var item in CurrentAudioInputValueFeedbacks)
-            //    item.Value.FireUpdate();
-            //foreach (var item in CurrentVideoInputNameFeedbacks)
-            //    item.Value.FireUpdate();
-            //foreach (var item in CurrentAudioNameFeedbacks)
-            //    item.Value.FireUpdate();
+            foreach (var item in OutputCurrentVideoValueFeedbacks)
+                item.Value.FireUpdate();
+            foreach (var item in OutputCurrentAudioValueFeedbacks)
+                item.Value.FireUpdate();
+            foreach (var item in OutputCurrentVideoNameFeedbacks)
+                item.Value.FireUpdate();
+            foreach (var item in OutputCurrentAudioNameFeedbacks)
+                item.Value.FireUpdate();
 		}
 
 		#endregion Overrides of EssentialsBridgeableDevice
+
+        #region ExecuteSwitch
+
+        /// <summary>
+        /// Executes switch
+        /// </summary>
+        /// <param name="inputSelector">Source number</param>
+        /// <param name="outputSelector">Output number</param>
+        /// <param name="signalType">AudioVideo, Video, or Audio</param>
+        public void ExecuteSwitch(object inputSelector, object outputSelector, eRoutingSignalType signalType)
+        {
+            var input = Convert.ToUInt32(inputSelector);
+            var output = Convert.ToUInt32(outputSelector);
+
+            Debug.Console(2, this, "ExecuteSwitch({0}, {1}, {2})", input, output, signalType.ToString());
+
+            if (output <= 0)
+                return;
+
+            uint inputIndex = 0;
+            uint outputIndex = 0;
+            var cmd = "";
+
+            // Valid levels
+            // 8 level system: V,A,B,C,D,E,F,G
+            // 16 level system: V,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O
+            // DeviceTx: ".S{level}{output},{input}{delimiter}"
+            switch (signalType)
+            {
+                case eRoutingSignalType.AudioVideo:
+                    {
+                        // TODO [X] Add routing command
+                        ExecuteSwitchVideo(input, output);
+                        ExecuteSwitchAudio(input, output);
+                        break;
+                    }
+                case eRoutingSignalType.Video:
+                    {
+                        // TODO [X] Add routing command
+                        ExecuteSwitchVideo(input, output);
+
+                        if (AudioFollowsVideo == true)
+                            ExecuteSwitchAudio(input, output);
+
+                        if (UsbBreakawayEnabled && UsbLevel != null)
+                            ExecuteSwitchUsb(input, output);
+
+                        break;
+                    }
+                case eRoutingSignalType.Audio:
+                    {
+                        // TODO [X] Add routing command
+                        ExecuteSwitchAudio(input, output);
+                        break;
+                    }
+                case eRoutingSignalType.UsbInput:
+                    {
+                        // TODO [X] Add routing command
+                        ExecuteSwitchUsb(input, output);
+                        break;
+                    }
+                case eRoutingSignalType.UsbOutput:
+                    {
+                        // TODO [X] Add routing command
+                        ExecuteSwitchUsb(input, output);
+                        break;
+                    }
+            }
+        }
+
+        private void ExecuteSwitchVideo(uint input, uint output)
+        {
+            uint outputIndex;
+            if (!_destQvIndexes.TryGetValue(output, out outputIndex))
+            {
+                Debug.Console(2, this, "ExecuteSwitchVideo: video output-{0} does not have an index ({1}) defined, unable to execute switch", output, outputIndex);
+                return;
+            }
+
+            uint inputIndex;
+            if (!_sourceQvIndexes.TryGetValue(input, out inputIndex))
+            {
+                Debug.Console(2, this, "ExecuteSwitchVideo: video input-{0} does not have an index ({1}) defined, executing blank switch", input, inputIndex);
+            }
+
+            if (VideoLevel == null)
+            {
+                Debug.Console(2, this, "ExecuteSwitchVideo: VideoLevel is null, unable to execute switch");
+                return;
+            }
+
+            string cmd = string.Format(".S{0}{1},{2}", VideoLevel, outputIndex, inputIndex);
+            EnqueueSendText(cmd);
+        }
+
+        private void ExecuteSwitchAudio(uint input, uint output)
+        {
+            uint outputIndex;
+            if (!_destQaIndexes.TryGetValue(output, out outputIndex))
+            {
+                Debug.Console(2, this, "ExecuteSwitchAudio: audio output-{0} does not have an index ({1}) defined, unable to execute switch", output, outputIndex);
+                return;
+            }
+
+            uint inputIndex;
+            if (!_sourceQaIndexes.TryGetValue(input, out inputIndex))
+            {
+                Debug.Console(2, this, "ExecuteSwitchAudio: audio input-{0} does not have an index ({1}) defined", input, inputIndex);
+            }
+
+            if (AudioLevel == null)
+            {
+                Debug.Console(2, this, "ExecuteSwitchAudio: AudioLevel is null, unable to execute switch");
+                return;
+            }
+
+            string cmd = string.Format(".S{0}{1},{2}", AudioLevel, outputIndex, inputIndex);
+            EnqueueSendText(cmd);
+        }
+
+        #endregion
+
 	}
 }
 
