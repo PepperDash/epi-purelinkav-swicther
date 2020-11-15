@@ -1,0 +1,120 @@
+﻿{
+    "system": {},
+    "system_url": "http://portal-QA.devcloud.pepperdash.com/templates/0f50640b-bc89-42d5-998f-81d137d3fc98#/template_summary",
+    "template": {
+        "devices": [
+            {
+                "key": "processor",
+                "uid": 0,
+                "type": "rmc3",
+                "name": "RMC3",
+                "group": "processor",
+                "supportedConfigModes": [
+                    "compliance",
+                    "essentials"
+                ],
+                "supportedSystemTypes": [
+                    "hudType",
+                    "presType",
+                    "vtcType",
+                    "custom"
+                ],
+                "supportsCompliance": true,
+                "properties": {}
+            },
+			{
+				"key": "pure-link-1",
+				"name": "Pure Link",
+				"type": "pureLink",
+				"group": "plugin",
+				"properties": {
+					"parentDeviceKey": "processor",
+					"control": {
+						"method": "tcpIp",
+						"tcpSshProperties": {
+							"address": "10.0.10.109",
+							"port": 21,
+							"autoReconnect": true,
+							"autoReconnectIntervalMs": 10000,
+							"username": "",
+							"password": ""
+						}
+					},
+                    "pollTimeMs": 60000,
+                    "pollString": "*255H000!",
+					"warningTimeoutMs": 120000,
+                    "errorTimeoutMs": 180000,
+                    "deviceId": 255,
+					"audioFollowsVideo": false,
+					"inputs": {
+						"1":{
+							"name": "Input 1"
+						},
+						"2":{
+							"name": "Input 2"
+						},
+						"3":{
+							"name": "Input 3"
+						},
+						"4":{
+							"name": "Input 4"
+                        },
+                        "5":{
+							"name": "Input 5"
+						}
+					},
+					"outputs":{
+						"1":{
+							"name": "Output 1"
+						},
+						"2":{
+							"name": "Output 2"
+						},
+						"3":{
+							"name": "Output 3"
+						},
+						"4":{
+							"name": "Output 4"
+                        },
+                        "5":{
+							"name": "Input 5"
+						}
+					}
+				}
+			},
+            {
+                "key": "app1-switcher-bridge-1",
+                "uid": 2,
+                "name": "Switcher Bridge 1",
+                "group": "api",
+                "type": "eiscApiAdvanced",
+                "properties": {
+                    "control": {
+                        "tcpSshProperties": {
+                            "address": "127.0.0.2",
+                            "port": 0
+                        },
+                        "ipid": "B0",
+                        "method": "ipidTcp"
+                    },
+                    "devices": [
+                        {
+                            "deviceKey": "pure-link-1",
+                            "joinStart": 1
+                        }
+                    ]
+                }
+            }
+        ],
+        "info": {
+            "comment": "",
+            "lastModifiedDate": "2017-03-06T23:14:40.290Z",
+            "lastUid": 2,
+            "processorType": "rmc3",
+            "requiredControlSofwareVersion": "",
+            "systemType": "huddle"
+        },
+        "rooms": [],
+        "tieLines": []
+    }
+}
