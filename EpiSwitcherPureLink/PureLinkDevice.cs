@@ -37,14 +37,15 @@ namespace PureLinkPlugin
         /// "Router ID Error" - Actual Router ID and entered Router ID did not match
         /// </summary>
 
-        private const string StartChar = "*";
-        private const string EndChar = "!";
-        private const string ConnectBothAVChar = "C";
-        private const string ConnectAudioChar = "AC";
-        private const string ConnectVideoChar = "VC";
-        private const string DisconnectBothAVChar = "D";
-        private const string DisconnectAudioChar = "AD";
-        private const string DisconnectVideoChar = "VD";
+        private const string    StartChar = "*";
+        private const string    EndChar = "!";
+        private const int       MaxIO = 72;
+        private const string    ConnectBothAVChar = "C";
+        private const string    ConnectAudioChar = "AC";
+        private const string    ConnectVideoChar = "VC";
+        private const string    DisconnectBothAVChar = "D";
+        private const string    DisconnectAudioChar = "AD";
+        private const string    DisconnectVideoChar = "VD";
         private PureLinkConfig _config; // It is often desirable to store the config
         #endregion Constants
 
@@ -412,24 +413,21 @@ namespace PureLinkPlugin
 
             Debug.Console(2, this, "ExecuteSwitch({0}, {1}, {2})", input, output, signalType.ToString());
 
-            if (output <= 0)
+            if (output < 0 || input < 0)
+                return;
+            if (output > MaxIO || input > MaxIO)
                 return;
 
             uint inputIndex = 0;
             uint outputIndex = 0;
             var cmd = "";
 
-            // Valid levels
-            // 8 level system: V,A,B,C,D,E,F,G
-            // 16 level system: V,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O
-            // DeviceTx: ".S{level}{output},{input}{delimiter}"
             switch (signalType)
             {
                 case eRoutingSignalType.AudioVideo:
                     {
                         // TODO [X] Add routing command
-                        ExecuteSwitchVideo(input, output);
-                        ExecuteSwitchAudio(input, output);
+                        ExecuteSwitchAudioVideo(input, output);
                         break;
                     }
                 case eRoutingSignalType.Video:
@@ -437,12 +435,8 @@ namespace PureLinkPlugin
                         // TODO [X] Add routing command
                         ExecuteSwitchVideo(input, output);
 
-                        if (AudioFollowsVideo == true)
+                        if (_config.AudioFollowsVideo == true)
                             ExecuteSwitchAudio(input, output);
-
-                        if (UsbBreakawayEnabled && UsbLevel != null)
-                            ExecuteSwitchUsb(input, output);
-
                         break;
                     }
                 case eRoutingSignalType.Audio:
@@ -451,71 +445,27 @@ namespace PureLinkPlugin
                         ExecuteSwitchAudio(input, output);
                         break;
                     }
-                case eRoutingSignalType.UsbInput:
-                    {
-                        // TODO [X] Add routing command
-                        ExecuteSwitchUsb(input, output);
-                        break;
-                    }
-                case eRoutingSignalType.UsbOutput:
-                    {
-                        // TODO [X] Add routing command
-                        ExecuteSwitchUsb(input, output);
-                        break;
-                    }
             }
+        }
+
+        private void ExecuteSwitchAudioVideo(uint input, uint output)
+        {
+            string cmd = string.Format("{0}{1}CI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+            SendText(cmd);
         }
 
         private void ExecuteSwitchVideo(uint input, uint output)
         {
-            uint outputIndex;
-            if (!_destQvIndexes.TryGetValue(output, out outputIndex))
-            {
-                Debug.Console(2, this, "ExecuteSwitchVideo: video output-{0} does not have an index ({1}) defined, unable to execute switch", output, outputIndex);
-                return;
-            }
-
-            uint inputIndex;
-            if (!_sourceQvIndexes.TryGetValue(input, out inputIndex))
-            {
-                Debug.Console(2, this, "ExecuteSwitchVideo: video input-{0} does not have an index ({1}) defined, executing blank switch", input, inputIndex);
-            }
-
-            if (VideoLevel == null)
-            {
-                Debug.Console(2, this, "ExecuteSwitchVideo: VideoLevel is null, unable to execute switch");
-                return;
-            }
-
-            string cmd = string.Format(".S{0}{1},{2}", VideoLevel, outputIndex, inputIndex);
-            EnqueueSendText(cmd);
+            string cmd = string.Format("{0}{1}VCI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+            SendText(cmd);
         }
 
         private void ExecuteSwitchAudio(uint input, uint output)
         {
-            uint outputIndex;
-            if (!_destQaIndexes.TryGetValue(output, out outputIndex))
-            {
-                Debug.Console(2, this, "ExecuteSwitchAudio: audio output-{0} does not have an index ({1}) defined, unable to execute switch", output, outputIndex);
-                return;
-            }
-
-            uint inputIndex;
-            if (!_sourceQaIndexes.TryGetValue(input, out inputIndex))
-            {
-                Debug.Console(2, this, "ExecuteSwitchAudio: audio input-{0} does not have an index ({1}) defined", input, inputIndex);
-            }
-
-            if (AudioLevel == null)
-            {
-                Debug.Console(2, this, "ExecuteSwitchAudio: AudioLevel is null, unable to execute switch");
-                return;
-            }
-
-            string cmd = string.Format(".S{0}{1},{2}", AudioLevel, outputIndex, inputIndex);
-            EnqueueSendText(cmd);
+            //Example command *255ACI01O08! = Connect Audio Input 1 to Output 8
+            string cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+            SendText(cmd);
         }
-
         #endregion
 
 	}
