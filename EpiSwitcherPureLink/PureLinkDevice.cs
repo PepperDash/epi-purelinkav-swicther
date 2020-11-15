@@ -40,12 +40,7 @@ namespace PureLinkPlugin
         private const string    StartChar = "*";
         private const string    EndChar = "!";
         private const int       MaxIO = 72;
-        private const string    ConnectBothAVChar = "C";
-        private const string    ConnectAudioChar = "AC";
-        private const string    ConnectVideoChar = "VC";
-        private const string    DisconnectBothAVChar = "D";
-        private const string    DisconnectAudioChar = "AD";
-        private const string    DisconnectVideoChar = "VD";
+
         private PureLinkConfig _config; // It is often desirable to store the config
         #endregion Constants
 
@@ -427,47 +422,36 @@ namespace PureLinkPlugin
                 case eRoutingSignalType.AudioVideo:
                     {
                         // TODO [X] Add routing command
-                        ExecuteSwitchAudioVideo(input, output);
+                        // Example command *255CI01O08! = Connect Audio Input 1 to Output 8
+                        cmd = string.Format("{0}{1}CI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Video:
                     {
                         // TODO [X] Add routing command
-                        ExecuteSwitchVideo(input, output);
+                        // Example command *255VCI01O08! = Connect Audio Input 1 to Output 8
+                        cmd = string.Format("{0}{1}VCI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        SendText(cmd);
 
                         if (_config.AudioFollowsVideo == true)
-                            ExecuteSwitchAudio(input, output);
+                        {
+                            cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            SendText(cmd);
+                        }
                         break;
                     }
                 case eRoutingSignalType.Audio:
                     {
                         // TODO [X] Add routing command
-                        ExecuteSwitchAudio(input, output);
+                        // Example command *255ACI01O08! = Connect Audio Input 1 to Output 8
+                        cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        SendText(cmd);
                         break;
                     }
             }
         }
-
-        private void ExecuteSwitchAudioVideo(uint input, uint output)
-        {
-            string cmd = string.Format("{0}{1}CI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-            SendText(cmd);
-        }
-
-        private void ExecuteSwitchVideo(uint input, uint output)
-        {
-            string cmd = string.Format("{0}{1}VCI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-            SendText(cmd);
-        }
-
-        private void ExecuteSwitchAudio(uint input, uint output)
-        {
-            //Example command *255ACI01O08! = Connect Audio Input 1 to Output 8
-            string cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-            SendText(cmd);
-        }
         #endregion
-
 	}
 }
 
