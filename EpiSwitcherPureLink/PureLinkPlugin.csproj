@@ -101,6 +101,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="PureLinkBridgeJoinMap.cs" />
+    <Compile Include="PureLinkCmdProcessor.cs" />
     <Compile Include="PureLinkDevice.cs" />
     <Compile Include="PureLinkConfig.cs" />
     <Compile Include="PureLinkFactory.cs" />

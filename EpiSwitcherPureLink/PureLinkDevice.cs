@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Crestron.SimplSharp.Ssh;
 using Crestron.SimplSharpPro.DeviceSupport;
 using PepperDash.Core;
@@ -18,6 +19,10 @@ namespace PureLinkPlugin
 	/// <example>
 	/// "EssentialsPluginDeviceTemplate" renamed to "SamsungMdcDevice"
 	/// </example>
+    /// Questions
+    /// 1. How does the EPI know when the bridge output has changed and to fire a commands?
+    /// 2. How does the 'Execute Switch' method get called? What is calling it?
+
 	public class PureLinkDevice : EssentialsBridgeableDevice
     {
         #region Constants
@@ -37,6 +42,7 @@ namespace PureLinkPlugin
         /// "Router ID Error" - Actual Router ID and entered Router ID did not match
         /// </summary>
 
+        private readonly PureLinkCmdProcessor cmdProcessor = new PureLinkCmdProcessor();
         private const string    StartChar = "*";
         private const string    EndChar = "!";
         private const int       MaxIO = 72;
@@ -392,6 +398,169 @@ namespace PureLinkPlugin
 		}
 
 		#endregion Overrides of EssentialsBridgeableDevice
+
+        #region HandleLineRecieved and ParseData
+
+        public void HandleLineReceived(object sender, GenericCommMethodReceiveTextArgs args)
+        {
+            if (args == null)
+            {
+                Debug.Console(2, this, "HandleLineReceived: args are null");
+                return;
+            }
+            if (string.IsNullOrEmpty(args.Text))
+            {
+                Debug.Console(2, this, "HandleLineReceived: args.Text is null or empty");
+                return;
+            }
+
+
+            try
+            {
+                // Text.Trim() Removes all leading and trailing white-space characters from the current string
+                var data = args.Text.Trim();
+                if (string.IsNullOrEmpty(data))
+                {
+                    Debug.Console(2, this, "HandleLineReceived: data is null or empty");
+                    return;
+                }
+
+                Debug.Console(2, this, "HandleLineReceived data:{0}", data);
+
+
+                if (data.ToLower().Contains("Command Code Error"))
+                {
+                    Debug.Console(2, this, "Received Command Code Error");
+                }
+
+                if (data.ToLower().Contains("sC"))
+                {
+                    Debug.Console(2, this, "Received Audio-Video Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessAudioVideoUpdateResponse(data));
+
+                }
+                else if (data.ToLower().Contains("sVC"))
+                {
+                    Debug.Console(2, this, "Received Video Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessVideoUpdateResponse(data));
+
+                }
+                else if (data.ToLower().Contains("sAC"))
+                {
+                    Debug.Console(2, this, "Received Audio Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessAudioUpdateResponse(data));
+                }
+                else
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived Exception: {0}", ex.InnerException.Message);
+            }
+        }
+
+        private void ProcessAudioVideoUpdateResponse(string response)
+        {
+            try
+            {
+                var responses = response.Split('s');
+                // Don't do this. 
+                // Instead, find the 'i' position, the next two characters are the input
+                // THen find the 'O', the next two character are the output
+
+                var input = Convert.ToInt32(responses[1].Replace("In", ""));
+                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
+                if (output == 0) return;
+                UpdateVideoRoute(output, input);
+            }
+            catch (Exception ex)
+            {
+                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
+            }
+        }
+
+        private void ProcessVideoUpdateResponse(string response)
+        {
+            try
+            {
+                var responses = response.Split(' ');
+
+                var input = Convert.ToInt32(responses[1].Replace("In", ""));
+                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
+                if (output == 0) return;
+                UpdateVideoRoute(output, input);
+            }
+            catch (Exception ex)
+            {
+                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
+            }
+        }
+
+        private void ProcessAudioUpdateResponse(string response)
+        {
+            try
+            {
+                var responses = response.Split(' ');
+
+                var input = Convert.ToInt32(responses[1].Replace("In", ""));
+                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                Debug.Console(2, this, "ProcessAudioUpdateResponse Input:{0} Output: {1}\r", input, output);
+                if (output == 0) return;
+                UpdateAudioRoute(output, input);
+            }
+            catch (Exception ex)
+            {
+                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
+            }
+        }
+
+        private void UpdateVideoRoute(int output, int value)
+        {
+            try
+            {
+                videoRoutes[output] = value;
+                Debug.Console(2, this, "UpdateVideoRoute Input:{0} Output:{1}\r", value, output);
+                IntFeedback feedback;
+                if (VideoOutputFeedbacks.TryGetValue(output, out feedback))
+                {
+                    feedback.FireUpdate();
+                }
+
+                StringFeedback nameFeedback;
+                if (OutputVideoRouteNameFeedbacks.TryGetValue(output, out nameFeedback))
+                {
+                    nameFeedback.FireUpdate();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Debug.ConsoleWithLog(0, this, "UpdateVideoRoute Exception:{0}\r", ex.Message);
+            }
+        }
+
+        private void UpdateAudioRoute(int output, int value)
+        {
+            audioRoutes[output] = value;
+
+            IntFeedback feedback;
+            if (AudioOutputFeedbacks.TryGetValue(output, out feedback))
+            {
+                if (feedback != null) feedback.FireUpdate();
+            }
+
+            StringFeedback nameFeedback;
+            if (OutputAudioRouteNameFeedbacks.TryGetValue(output, out nameFeedback))
+            {
+                if (nameFeedback != null) nameFeedback.FireUpdate();
+            }
+        }
+        #endregion
+
 
         #region ExecuteSwitch
 
