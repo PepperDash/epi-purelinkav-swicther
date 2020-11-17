@@ -20,8 +20,10 @@ namespace PureLinkPlugin
 	/// "EssentialsPluginDeviceTemplate" renamed to "SamsungMdcDevice"
 	/// </example>
     /// Questions
-    /// 1. How does the EPI know when the bridge output has changed and to fire a commands?
-    /// 2. How does the 'Execute Switch' method get called? What is calling it?
+    /// 1. How does the EPI know when the bridge analog 'output' signals change and to fire a command? [Nick G: Review LinkToApi, ensure for-loop creation.]
+    /// 2. How does the 'Execute Switch' method get called? What is calling it? [Nick G: Same as above. Execute switch is called using a Lambda. See below.]
+    /// 3. How do I know when I could utilize the 'FireUpdate()' method? [Nick G: You can utilize anytime. Its a method within a class not local to the Device class.]
+    /// Notes: Delate is a signature for a method. 
 
 	public class PureLinkDevice : EssentialsBridgeableDevice
     {
@@ -287,7 +289,24 @@ namespace PureLinkPlugin
 
 		#endregion IBasicCommunication Properties and Constructor.  Remove if not needed.
 
-		#region Overrides of EssentialsBridgeableDevice
+
+	    private Action<ushort> jonniesAction; 
+        // This above is an example delagate (signature of a method). You can assign any method to the variable 'jonniesAction'. 
+        // Delagate is just defining the signature of method. In this case, the method is of type action which takes in a single ushort parameter.
+        // The 'action' method NEVER returns anything and is ALWAYS VOID. It's just not mentioned in the name.
+        // 
+	    private void method1(ushort today){	    }
+        private void method2(ushort today){	    }
+
+        //jonniesAction = new Action<ushort>(method1);
+        //jonniesAction(1);
+        //jonniesAction = new Action<ushort>(method2);
+        //jonniesAction = obj => {  };      
+
+
+
+
+	    #region Overrides of EssentialsBridgeableDevice
 
 		/// <summary>
 		/// Links the plugin device to the EISC bridge
@@ -322,6 +341,7 @@ namespace PureLinkPlugin
             trilist.SetString(joinMap.DeviceName.JoinNumber, Name);
 			trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);
             trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);
+            //Need to include additional trilist.setx for when analogs change           
 
             // X.LinkInputSig is the feedback going back to SIMPL
 			ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
@@ -331,10 +351,20 @@ namespace PureLinkPlugin
 
             // TODO [X] Need to update poll method
             // TODO [X] Reference your poll string in your poll method
-            // TODO [ ] Need execute switch > determine input or output number > then sendText()
+            // TODO [X] Need execute switch > determine input or output number > then sendText()
             // TODO [ ] Add parsing routines within the handlelinereceived
 
-            // TODO [X] Create FOREACH loop(s) to update the bridge
+		    for (var x = 1; x <= joinMap.OutputVideo.JoinSpan; x++)
+		    {
+		        var joinActual = x + joinMap.OutputVideo.JoinNumber - 1;
+		        int analogOutput = x;
+		        trilist.SetUShortSigAction((uint) joinActual,
+		            analogInput => ExecuteSwitch(analogInput, analogOutput, eRoutingSignalType.Video));
+		    }
+
+
+
+		    // TODO [X] Create FOREACH loop(s) to update the bridge
             // Need to find the Crestron trilist join array value. Once array join is found your starting with a value of 1 already so account for this by minus 1
             foreach (var item in OutputVideoNameFeedbacks)
             {
@@ -560,7 +590,6 @@ namespace PureLinkPlugin
             }
         }
         #endregion
-
 
         #region ExecuteSwitch
 
