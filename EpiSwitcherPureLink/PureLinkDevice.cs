@@ -37,7 +37,7 @@ namespace PureLinkPlugin
         /// "*255DALLIO!" - Disconnect video and audio, 
         /// "*255VDALLIO!" - Disconnect video, all inputs and outputs
         /// "*255ADALLIO!" - Disconnect audio, all inputs and outputs
-        /// "255VCI01O01!" - Connect Video Input 1 to Output 1
+        /// "*255VCI01O01!" - Connect Video Input 1 to Output 1
         /// "*255ACI01O01!" - Connect Audio Input 1 to Output 1
         /// "*255CI01O01!" - Connect both Video and Audio Input 1 to Output 1
         /// "Command Code Error" - The command was not executed due to error
@@ -166,6 +166,8 @@ namespace PureLinkPlugin
             OutputAudioNameFeedbacks = new Dictionary<uint, StringFeedback>();
             OutputCurrentVideoNameFeedbacks = new Dictionary<uint, StringFeedback>();
             OutputCurrentAudioNameFeedbacks = new Dictionary<uint, StringFeedback>();
+            OutputCurrentVideoValueFeedbacks = new Dictionary<uint, IntFeedback>();
+            OutputCurrentAudioValueFeedbacks = new Dictionary<uint, IntFeedback>();
 
 			_comms = comms;
 			_commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
@@ -198,7 +200,7 @@ namespace PureLinkPlugin
 	    {
 	        if (outputs == null)
 	        {
-                Debug.Console(0, this, "what do you want to say");
+                Debug.Console(0, this, "Cannot inialize output names, outputs null");
 	            return;
 	        }
 	        foreach (var output in outputs)
@@ -212,7 +214,6 @@ namespace PureLinkPlugin
                 Debug.Console(2, this, "Output-{0} Audio Name: {1}", item.Key, item.Value.AudioName);                
 
                 // Could write in logic that if audio name or video name is null, populate the audio/video name from the 'Name' value
-
                 OutputVideoNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.VideoName));
                 OutputAudioNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.AudioName));
 	        }
@@ -287,8 +288,7 @@ namespace PureLinkPlugin
             SendText(_config.PollString);
 		}
 
-		#endregion IBasicCommunication Properties and Constructor.  Remove if not needed.
-
+		#endregion IBasicCommunication Properties and Constructor
 
 	    private Action<ushort> jonniesAction; 
         // This above is an example delagate (signature of a method). You can assign any method to the variable 'jonniesAction'. 
@@ -302,9 +302,6 @@ namespace PureLinkPlugin
         //jonniesAction(1);
         //jonniesAction = new Action<ushort>(method2);
         //jonniesAction = obj => {  };      
-
-
-
 
 	    #region Overrides of EssentialsBridgeableDevice
 
@@ -362,8 +359,6 @@ namespace PureLinkPlugin
 		            analogInput => ExecuteSwitch(analogInput, analogOutput, eRoutingSignalType.Video));
 		    }
 
-
-
 		    // TODO [X] Create FOREACH loop(s) to update the bridge
             // Need to find the Crestron trilist join array value. Once array join is found your starting with a value of 1 already so account for this by minus 1
             foreach (var item in OutputVideoNameFeedbacks)
@@ -406,7 +401,7 @@ namespace PureLinkPlugin
         /// </summary>
 	    private void UpdateFeedbacks()
 		{
-			// TODO [Z] Update as needed for the plugin being developed
+			// TODO [X] Update as needed for the plugin being developed
             
 			ConnectFeedback.FireUpdate();
 			OnlineFeedback.FireUpdate();
@@ -444,7 +439,6 @@ namespace PureLinkPlugin
                 return;
             }
 
-
             try
             {
                 // Text.Trim() Removes all leading and trailing white-space characters from the current string
@@ -461,24 +455,26 @@ namespace PureLinkPlugin
                 if (data.ToLower().Contains("Command Code Error"))
                 {
                     Debug.Console(2, this, "Received Command Code Error");
+                    return;
                 }
 
                 if (data.ToLower().Contains("sC"))
                 {
                     Debug.Console(2, this, "Received Audio-Video Switch FB");
                     cmdProcessor.EnqueueTask(() => ProcessAudioVideoUpdateResponse(data));
-
+                    return;
                 }
                 else if (data.ToLower().Contains("sVC"))
                 {
                     Debug.Console(2, this, "Received Video Switch FB");
                     cmdProcessor.EnqueueTask(() => ProcessVideoUpdateResponse(data));
-
+                    return;
                 }
                 else if (data.ToLower().Contains("sAC"))
                 {
                     Debug.Console(2, this, "Received Audio Switch FB");
                     cmdProcessor.EnqueueTask(() => ProcessAudioUpdateResponse(data));
+                    return;
                 }
                 else
                 {
@@ -495,13 +491,12 @@ namespace PureLinkPlugin
         {
             try
             {
-                var responses = response.Split('s');
-                // Don't do this. 
-                // Instead, find the 'i' position, the next two characters are the input
-                // THen find the 'O', the next two character are the output
+                // The INPUT value should always start at positional value 7 and include position 7 & 8
+                // The OUTPUT value should alwsys start at positionla value 10 and include position 10 & 11
+                // Example response, '*255CI01O01!'
 
-                var input = Convert.ToInt32(responses[1].Replace("In", ""));
-                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                var input = Convert.ToInt32(response.Remove(7, 8));
+                var output = Convert.ToInt32(response.Remove(10, 11));
                 Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateVideoRoute(output, input);
@@ -516,10 +511,9 @@ namespace PureLinkPlugin
         {
             try
             {
-                var responses = response.Split(' ');
-
-                var input = Convert.ToInt32(responses[1].Replace("In", ""));
-                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                // Example response, '*255VCI01O01!'
+                var input = Convert.ToInt32(response.Remove(8, 9));
+                var output = Convert.ToInt32(response.Remove(11, 12));
                 Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateVideoRoute(output, input);
@@ -534,10 +528,10 @@ namespace PureLinkPlugin
         {
             try
             {
-                var responses = response.Split(' ');
+                // Example response, '*255ACI01O01!'
 
-                var input = Convert.ToInt32(responses[1].Replace("In", ""));
-                var output = Convert.ToInt32(responses[0].Replace("Out", ""));
+                var input = Convert.ToInt32(response.Remove(8, 9));
+                var output = Convert.ToInt32(response.Remove(11, 12));
                 Debug.Console(2, this, "ProcessAudioUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateAudioRoute(output, input);
@@ -549,23 +543,17 @@ namespace PureLinkPlugin
         }
 
         private void UpdateVideoRoute(int output, int value)
-        {
+        {     
             try
             {
-                videoRoutes[output] = value;
                 Debug.Console(2, this, "UpdateVideoRoute Input:{0} Output:{1}\r", value, output);
-                IntFeedback feedback;
-                if (VideoOutputFeedbacks.TryGetValue(output, out feedback))
-                {
-                    feedback.FireUpdate();
-                }
+                OutputCurrentVideoValueFeedbacks.Add((uint)output, new IntFeedback(() => value));
 
                 StringFeedback nameFeedback;
-                if (OutputVideoRouteNameFeedbacks.TryGetValue(output, out nameFeedback))
+                if (OutputCurrentVideoNameFeedbacks.TryGetValue((uint)output, out nameFeedback))
                 {
                     nameFeedback.FireUpdate();
                 }
-
             }
             catch (Exception ex)
             {
@@ -575,19 +563,22 @@ namespace PureLinkPlugin
 
         private void UpdateAudioRoute(int output, int value)
         {
-            audioRoutes[output] = value;
-
-            IntFeedback feedback;
-            if (AudioOutputFeedbacks.TryGetValue(output, out feedback))
+            try
             {
-                if (feedback != null) feedback.FireUpdate();
+                Debug.Console(2, this, "UpdateVideoRoute Input:{0} Output:{1}\r", value, output);
+                OutputCurrentAudioValueFeedbacks.Add((uint)output, new IntFeedback(() => value));
+
+                StringFeedback nameFeedback;
+                if (OutputCurrentAudioNameFeedbacks.TryGetValue((uint)output, out nameFeedback))
+                {
+                    nameFeedback.FireUpdate();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.ConsoleWithLog(0, this, "UpdateAudioRoute Exception:{0}\r", ex.Message);
             }
 
-            StringFeedback nameFeedback;
-            if (OutputAudioRouteNameFeedbacks.TryGetValue(output, out nameFeedback))
-            {
-                if (nameFeedback != null) nameFeedback.FireUpdate();
-            }
         }
         #endregion
 
