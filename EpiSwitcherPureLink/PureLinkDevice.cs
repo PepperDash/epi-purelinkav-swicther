@@ -359,6 +359,14 @@ namespace PureLinkPlugin
 		            analogInput => ExecuteSwitch(analogInput, analogOutput, eRoutingSignalType.Video));
 		    }
 
+            for (var x = 1; x <= joinMap.OutputAudio.JoinSpan; x++)
+            {
+                var joinActual = x + joinMap.OutputAudio.JoinNumber - 1;
+                int analogOutput = x;
+                trilist.SetUShortSigAction((uint)joinActual,
+                    analogInput => ExecuteSwitch(analogInput, analogOutput, eRoutingSignalType.Audio));
+            }
+
 		    // TODO [X] Create FOREACH loop(s) to update the bridge
             // Need to find the Crestron trilist join array value. Once array join is found your starting with a value of 1 already so account for this by minus 1
             foreach (var item in OutputVideoNameFeedbacks)
@@ -370,6 +378,48 @@ namespace PureLinkPlugin
                 var feedback = item.Value;
                 if (feedback == null) continue;
                 feedback.LinkInputSig(trilist.StringInput[join]);
+            }
+
+            foreach (var item in OutputAudioNameFeedbacks)
+            {
+                // get the actual join number of the signal
+                var join = item.Key + joinMap.OutputAudio.JoinNumber - 1;
+                // this is the actual output number which is the item.Key as read in from the configuraiton file
+                var output = item.Key;
+                // this is linking incoming from SIMPL EISC bridge (aka route request) to the routing method defined
+                trilist.SetUShortSigAction(join, input => ExecuteSwitch(input, output, eRoutingSignalType.Audio));
+                // this is linking route feedbacks to SIMPL EISC bridge
+                var feedback = item.Value;
+                if (feedback == null) continue;
+                feedback.LinkInputSig(trilist.StringInput[join]);
+            }
+
+            foreach (var item in OutputCurrentVideoValueFeedbacks)
+            {
+                // get the actual join number of the signal
+                var join = item.Key + joinMap.OutputVideo.JoinNumber - 1;
+                // this is the actual output number which is the item.Key as read in from the configuraiton file
+                var output = item.Key;
+                // this is linking incoming from SIMPL EISC bridge (aka route request) to the routing method defined
+                trilist.SetUShortSigAction(join, input => ExecuteSwitch(input, output, eRoutingSignalType.Video));
+                // this is linking route feedbacks to SIMPL EISC bridge
+                var feedback = item.Value;
+                if (feedback == null) continue;
+                feedback.LinkInputSig(trilist.UShortInput[join]);
+            }
+
+            foreach (var item in OutputCurrentAudioValueFeedbacks)
+            {
+                // get the actual join number of the signal
+                var join = item.Key + joinMap.OutputAudio.JoinNumber - 1;
+                // this is the actual output number which is the item.Key as read in from the configuraiton file
+                var output = item.Key;
+                // this is linking incoming from SIMPL EISC bridge (aka route request) to the routing method defined
+                trilist.SetUShortSigAction(join, input => ExecuteSwitch(input, output, eRoutingSignalType.Audio));
+                // this is linking route feedbacks to SIMPL EISC bridge
+                var feedback = item.Value;
+                if (feedback == null) continue;
+                feedback.LinkInputSig(trilist.UShortInput[join]);
             }
 
 			UpdateFeedbacks();
