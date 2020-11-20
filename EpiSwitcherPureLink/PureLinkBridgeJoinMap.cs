@@ -203,7 +203,7 @@ namespace PureLinkPlugin
 
         #region Serial
 
-        // TODO [ ] Add serial joins below plugin being developed
+        // TODO [X] Add serial joins below plugin being developed
 
         /// <summary>
         /// Plugin device name
@@ -223,15 +223,22 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToSIMPL,
                 JoinType = eJoinType.Serial
             });
-
+        /// <summary>
+        /// Plugin input names assigned to sources. Name is generic and will not override the specific 'InputVideoNames' or 'InputAudioNames' if defined.
+        /// </summary>
         [JoinName("InputNames")]
         public JoinDataComplete InputNames = new JoinDataComplete(new JoinData { JoinNumber = 101, JoinSpan = 32 },
             new JoinMetadata { Description = "DM Chassis Input Name", JoinCapabilities = eJoinCapabilities.ToSIMPL, JoinType = eJoinType.Serial });
 
+        /// <summary>
+        /// Plugin output names assigned destinations. Name is generic and will not override the specific 'OutputVideoNames' or 'OutputAudioNames' if defined.
+        /// </summary>
         [JoinName("OutputNames")]
         public JoinDataComplete OutputNames = new JoinDataComplete(new JoinData { JoinNumber = 301, JoinSpan = 32 },
             new JoinMetadata { Description = "DM Chassis Output Name", JoinCapabilities = eJoinCapabilities.ToSIMPL, JoinType = eJoinType.Serial });
-
+        /// <summary>
+        /// 
+        /// </summary>
         [JoinName("InputVideoNames")]
         public JoinDataComplete InputVideoNames =
             new JoinDataComplete(new JoinData { JoinNumber = 501, JoinSpan = 200 },
