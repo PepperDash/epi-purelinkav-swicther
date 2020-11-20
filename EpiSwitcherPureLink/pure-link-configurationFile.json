@@ -32,8 +32,8 @@
 					"control": {
 						"method": "tcpIp",
 						"tcpSshProperties": {
-							"address": "10.0.10.109",
-							"port": 21,
+							"address": "10.1.10.109",
+							"port": 5221,
 							"autoReconnect": true,
 							"autoReconnectIntervalMs": 10000,
 							"username": "",

@@ -49,8 +49,10 @@ namespace PureLinkPlugin
         private const string    EndChar = "!";
         private const int       MaxIO = 72;
 
-        private PureLinkConfig _config; // It is often desirable to store the config
+        
         #endregion Constants
+
+        private PureLinkConfig _config; // It is often desirable to store the config
 
 		#region IBasicCommunication Properties and Constructor
 
@@ -153,8 +155,13 @@ namespace PureLinkPlugin
 		    if (_config.PollTimeMs == 0 )
 		        _config.PollTimeMs = 45000;
 
-            // TODO [ ] Do error and warning as well
+            if (_config.WarningTimeoutMs == 0)
+                _config.WarningTimeoutMs = 180000;
 
+            if (_config.ErrorTimeoutMs == 0)
+                _config.ErrorTimeoutMs = 300000;
+
+            // TODO [X] Do error and warning as well
 			ConnectFeedback = new BoolFeedback(() => Connect);
 			OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             AudioFollowsVideoFeedback = new BoolFeedback(() => _config.AudioFollowsVideo);
@@ -214,10 +221,19 @@ namespace PureLinkPlugin
                 Debug.Console(2, this, "Output-{0} Audio Name: {1}", item.Key, item.Value.AudioName);                
 
                 // Could write in logic that if audio name or video name is null, populate the audio/video name from the 'Name' value
+	            if (string.IsNullOrEmpty(item.Value.VideoName))
+	            {
+                    if(!string.IsNullOrEmpty(item.Value.Name))
+                        item.Value.VideoName = item.Value.Name;
+	            }
+                if (string.IsNullOrEmpty(item.Value.AudioName))
+                {
+                    if (!string.IsNullOrEmpty(item.Value.Name))
+                        item.Value.AudioName = item.Value.Name;
+                }
                 OutputVideoNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.VideoName));
                 OutputAudioNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.AudioName));
 	        }
-
 	    }
 
         private void InitializeInputNames(Dictionary<uint, PureLinkEntryConfig> inputs)
@@ -238,7 +254,16 @@ namespace PureLinkPlugin
                 Debug.Console(2, this, "input-{0} Audio Name: {1}", item.Key, item.Value.AudioName);
 
                 // Could write in logic that if audio name or video name is null, populate the audio/video name from the 'Name' value
-
+                if (string.IsNullOrEmpty(item.Value.VideoName))
+                {
+                    if (!string.IsNullOrEmpty(item.Value.Name))
+                        item.Value.VideoName = item.Value.Name;
+                }
+                if (string.IsNullOrEmpty(item.Value.AudioName))
+                {
+                    if (!string.IsNullOrEmpty(item.Value.Name))
+                        item.Value.AudioName = item.Value.Name;
+                }
                 InputVideoNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.VideoName));
                 InputAudioNameFeedbacks.Add(item.Key, new StringFeedback(() => item.Value.AudioName));
             }
@@ -257,8 +282,63 @@ namespace PureLinkPlugin
 		// TODO [X] If using an API with a delimeter, keep the method below
 		private void Handle_LineRecieved(object sender, GenericCommMethodReceiveTextArgs args)
 		{
-			// TODO [ ] Implement method, introduce parsing routines here
-			throw new System.NotImplementedException();
+            if (args == null)
+            {
+                Debug.Console(2, this, "HandleLineReceived: args are null");
+                return;
+            }
+            if (string.IsNullOrEmpty(args.Text))
+            {
+                Debug.Console(2, this, "HandleLineReceived: args.Text is null or empty");
+                return;
+            }
+
+            try
+            {
+                // Text.Trim() Removes all leading and trailing white-space characters from the current string
+                var data = args.Text.Trim();
+                if (string.IsNullOrEmpty(data))
+                {
+                    Debug.Console(2, this, "HandleLineReceived: data is null or empty");
+                    return;
+                }
+
+                Debug.Console(2, this, "HandleLineReceived data:{0}", data);
+
+
+                if (data.ToLower().Contains("Command Code Error"))
+                {
+                    Debug.Console(2, this, "Received Command Code Error");
+                    return;
+                }
+
+                if (data.ToLower().Contains("sC"))
+                {
+                    Debug.Console(2, this, "Received Audio-Video Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessAudioVideoUpdateResponse(data));
+                    return;
+                }
+                else if (data.ToLower().Contains("sVC"))
+                {
+                    Debug.Console(2, this, "Received Video Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessVideoUpdateResponse(data));
+                    return;
+                }
+                else if (data.ToLower().Contains("sAC"))
+                {
+                    Debug.Console(2, this, "Received Audio Switch FB");
+                    cmdProcessor.EnqueueTask(() => ProcessAudioUpdateResponse(data));
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived Exception: {0}", ex.InnerException.Message);
+            }
 		}
 
 		// TODO [X] Delete below if not using ASCII based API
@@ -289,20 +369,7 @@ namespace PureLinkPlugin
 		}
 
 		#endregion IBasicCommunication Properties and Constructor
-
-	    private Action<ushort> jonniesAction; 
-        // This above is an example delagate (signature of a method). You can assign any method to the variable 'jonniesAction'. 
-        // Delagate is just defining the signature of method. In this case, the method is of type action which takes in a single ushort parameter.
-        // The 'action' method NEVER returns anything and is ALWAYS VOID. It's just not mentioned in the name.
-        // 
-	    private void method1(ushort today){	    }
-        private void method2(ushort today){	    }
-
-        //jonniesAction = new Action<ushort>(method1);
-        //jonniesAction(1);
-        //jonniesAction = new Action<ushort>(method2);
-        //jonniesAction = obj => {  };      
-
+    
 	    #region Overrides of EssentialsBridgeableDevice
 
 		/// <summary>
@@ -474,69 +541,9 @@ namespace PureLinkPlugin
 
 		#endregion Overrides of EssentialsBridgeableDevice
 
-        #region HandleLineRecieved and ParseData
+        #region ParseData
 
-        public void HandleLineReceived(object sender, GenericCommMethodReceiveTextArgs args)
-        {
-            if (args == null)
-            {
-                Debug.Console(2, this, "HandleLineReceived: args are null");
-                return;
-            }
-            if (string.IsNullOrEmpty(args.Text))
-            {
-                Debug.Console(2, this, "HandleLineReceived: args.Text is null or empty");
-                return;
-            }
-
-            try
-            {
-                // Text.Trim() Removes all leading and trailing white-space characters from the current string
-                var data = args.Text.Trim();
-                if (string.IsNullOrEmpty(data))
-                {
-                    Debug.Console(2, this, "HandleLineReceived: data is null or empty");
-                    return;
-                }
-
-                Debug.Console(2, this, "HandleLineReceived data:{0}", data);
-
-
-                if (data.ToLower().Contains("Command Code Error"))
-                {
-                    Debug.Console(2, this, "Received Command Code Error");
-                    return;
-                }
-
-                if (data.ToLower().Contains("sC"))
-                {
-                    Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessAudioVideoUpdateResponse(data));
-                    return;
-                }
-                else if (data.ToLower().Contains("sVC"))
-                {
-                    Debug.Console(2, this, "Received Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessVideoUpdateResponse(data));
-                    return;
-                }
-                else if (data.ToLower().Contains("sAC"))
-                {
-                    Debug.Console(2, this, "Received Audio Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessAudioUpdateResponse(data));
-                    return;
-                }
-                else
-                {
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived Exception: {0}", ex.InnerException.Message);
-            }
-        }
-
+  
         private void ProcessAudioVideoUpdateResponse(string response)
         {
             try

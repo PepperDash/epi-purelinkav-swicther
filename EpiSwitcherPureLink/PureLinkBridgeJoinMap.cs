@@ -247,7 +247,7 @@ namespace PureLinkPlugin
             new JoinDataComplete(new JoinData { JoinNumber = 701, JoinSpan = 200 },
             new JoinMetadata
             {
-                Description = "Video Input Name",
+                Description = "Audio Input Name",
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Serial
             });
@@ -256,16 +256,16 @@ namespace PureLinkPlugin
             new JoinDataComplete(new JoinData { JoinNumber = 901, JoinSpan = 200 },
             new JoinMetadata
             {
-                Description = "Video Input Name",
+                Description = "Video Output Name",
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Serial
             });
         [JoinName("OutputAudioNames")]
         public JoinDataComplete OutputAudioNames =
-            new JoinDataComplete(new JoinData { JoinNumber = 1101, JoinSpan = 200 },
+            new JoinDataComplete(new JoinData { JoinNumber = 1001, JoinSpan = 200 },
             new JoinMetadata
             {
-                Description = "Video Input Name",
+                Description = "Audio Output Name",
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Serial
             });
