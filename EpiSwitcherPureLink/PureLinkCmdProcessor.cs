@@ -7,17 +7,27 @@ using Crestron.SimplSharpPro.CrestronThread;
 
 namespace PureLinkPlugin
 {
+    /// <summary>
+    /// Plugin processor class used for threading
+    /// </summary>
     public class PureLinkCmdProcessor : IDisposable
     {
         Thread worker;
         CEvent wh = new CEvent();
         CrestronQueue<Action> tasks = new CrestronQueue<Action>();
 
+        /// <summary>
+        /// Method to create a new worker thread
+        /// </summary>
         public PureLinkCmdProcessor()
         {
             worker = new Thread(ProcessFeedback, null, Thread.eThreadStartOptions.Running);
         }
 
+        /// <summary>
+        /// Plugin method to queue tasks
+        /// </summary>
+        /// <param name="task"></param>
         public void EnqueueTask(Action task)
         {
             tasks.Enqueue(task);
@@ -46,6 +56,9 @@ namespace PureLinkPlugin
 
         #region IDisposable Members
 
+        /// <summary>
+        /// Method to dispose of the worker thread
+        /// </summary>
         public void Dispose()
         {
             tasks.Enqueue(null);

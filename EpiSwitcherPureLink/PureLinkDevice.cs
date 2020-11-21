@@ -19,14 +19,12 @@ namespace PureLinkPlugin
 	/// <example>
 	/// "EssentialsPluginDeviceTemplate" renamed to "SamsungMdcDevice"
 	/// </example>
-    /// Questions
-    /// 1. How does the EPI know when the bridge analog 'output' signals change and to fire a command? [Nick G: Review LinkToApi, ensure for-loop creation.]
-    /// 2. How does the 'Execute Switch' method get called? What is calling it? [Nick G: Same as above. Execute switch is called using a Lambda. See below.]
-    /// 3. How do I know when I could utilize the 'FireUpdate()' method? [Nick G: You can utilize anytime. Its a method within a class not local to the Device class.]
     /// Notes: Delate is a signature for a method. 
 
 	public class PureLinkDevice : EssentialsBridgeableDevice
     {
+        private PureLinkConfig _config; // It is often desirable to store the config
+
         #region Constants
         /// <summary>
         /// "*999?version!" - Check firmware version
@@ -43,16 +41,15 @@ namespace PureLinkPlugin
         /// "Command Code Error" - The command was not executed due to error
         /// "Router ID Error" - Actual Router ID and entered Router ID did not match
         /// </summary>
+       
+        private const string PollString = "*999?version!";
+        private const string StartChar = "*";
+        private const string EndChar = "!";
+        private const int MaxIO = 72;
 
         private readonly PureLinkCmdProcessor cmdProcessor = new PureLinkCmdProcessor();
-        private const string    StartChar = "*";
-        private const string    EndChar = "!";
-        private const int       MaxIO = 72;
-
         
         #endregion Constants
-
-        private PureLinkConfig _config; // It is often desirable to store the config
 
 		#region IBasicCommunication Properties and Constructor
 
@@ -69,29 +66,53 @@ namespace PureLinkPlugin
 		/// </summary>
 		private const string CommsDelimiter = "\n";
 
-		/// <summary>
-		/// Connects/disconnects the comms of the plugin device
-		/// </summary>
-		/// <remarks>
-		/// triggers the _comms.Connect/Disconnect as well as thee comms monitor start/stop
-		/// </remarks>
-		public bool Connect
-		{
-			get { return _comms.IsConnected; }
-			set
-			{
-				if (value)
-				{
-					_comms.Connect();
-					_commsMonitor.Start();				
-				}
-				else
-				{
-					_comms.Disconnect();
-					_commsMonitor.Stop();
-				}
-			}
-		}
+        ///// <summary>
+        ///// Connects/Disconnects the comms of the plugin device
+        ///// </summary>
+        ///// <remarks>
+        ///// triggers the _comms.Connect/Disconnect as well as thee comms monitor start/stop
+        ///// </remarks>
+        //public bool Connect
+        //{
+        //    get { return _comms.IsConnected; }
+        //    set
+        //    {
+        //        if (value)
+        //        {
+        //            _comms.Connect();
+        //            _commsMonitor.Start();				
+        //        }
+        //        else
+        //        {
+        //            _comms.Disconnect();
+        //            _commsMonitor.Stop();
+        //        }
+        //    }
+        //}
+
+        /// <summary>
+        /// Connects the comms of the plugin device
+        /// </summary>
+        /// <remarks>
+        /// triggers the _comms.Connect as well and starts the comms monitor
+        /// </remarks>
+        public void Connect()
+        {
+            _comms.Connect();
+            _commsMonitor.Start();
+        }
+
+        /// <summary>
+        /// Disconnects the comms of the plugin device
+        /// </summary>
+        /// <remarks>
+        /// triggers the _comms.Disconnects stops the comms monitor
+        /// </remarks>
+        public void Disconnect()
+        {
+            _comms.Disconnect();
+            _commsMonitor.Stop();
+        }
 
 		/// <summary>
 		/// Reports connect feedback through the bridge
@@ -113,19 +134,55 @@ namespace PureLinkPlugin
 		/// </summary>
 		public IntFeedback StatusFeedback { get; private set; }
 
-        // Add feedback for routing and names // Video Routing, input names, and outputcurrentnames
+        // TODO [X] Add feedback for routing, names, video routing, audio routing, and outputcurrentnames
+        /// <summary>
+        /// Plugin property for generic input names
+        /// </summary>
         public Dictionary<uint, StringFeedback> InputNameFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for video input names
+        /// </summary>
         public Dictionary<uint, StringFeedback> InputVideoNameFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for audio input names
+        /// </summary>
         public Dictionary<uint, StringFeedback> InputAudioNameFeedbacks { get; private set; }
 
+        /// <summary>
+        /// Plugin property for generic output names
+        /// </summary>
         public Dictionary<uint, StringFeedback> OutputNameFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for video output names
+        /// </summary>
         public Dictionary<uint, StringFeedback> OutputVideoNameFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for audio output names
+        /// </summary>
         public Dictionary<uint, StringFeedback> OutputAudioNameFeedbacks { get; private set; }
 
+        /// <summary>
+        /// Plugin property for current video source name routed per output
+        /// </summary>
         public Dictionary<uint, StringFeedback> OutputCurrentVideoNameFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for current audio source name routed per output
+        /// </summary>
         public Dictionary<uint, StringFeedback> OutputCurrentAudioNameFeedbacks { get; private set; }
 
+        /// <summary>
+        /// Plugin property for current video source value routed per output
+        /// </summary>
         public Dictionary<uint, IntFeedback> OutputCurrentVideoValueFeedbacks { get; private set; }
+
+        /// <summary>
+        /// Plugin property for current audio source value routed per output
+        /// </summary>
         public Dictionary<uint, IntFeedback> OutputCurrentAudioValueFeedbacks { get; private set; }
 
 		/// <summary>
@@ -150,7 +207,7 @@ namespace PureLinkPlugin
 
             // Consider enforcing default poll values IF NOT DEFINED in the JSON config
 		    if (string.IsNullOrEmpty(_config.PollString))
-                _config.PollString = "*999?version!";
+                _config.PollString = PollString;
 
 		    if (_config.PollTimeMs == 0 )
 		        _config.PollTimeMs = 45000;
@@ -163,7 +220,7 @@ namespace PureLinkPlugin
 
             // TODO [X] Do error and warning as well
 
-			ConnectFeedback = new BoolFeedback(() => Connect);
+			//ConnectFeedback = new BoolFeedback(() => Connect);
 			OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             AudioFollowsVideoFeedback = new BoolFeedback(() => _config.AudioFollowsVideo);
 		    StatusFeedback = new IntFeedback(GetSocketStatus);
@@ -189,7 +246,8 @@ namespace PureLinkPlugin
             {
                 // device comms is IP **ELSE** device comms is RS232
                 socket.ConnectionChange += socket_ConnectionChange;
-                Connect = true;
+                //Connect = true;
+                Connect();
             }
 
 			#region Communication data event handlers.  Comment out any that don't apply to the API type                      			
@@ -377,7 +435,7 @@ namespace PureLinkPlugin
 		/// </remarks>
 		public void Poll()
 		{
-			// TODO [ ] Update Poll method as needed for the plugin being developed
+			// TODO [X] Update Poll method as needed for the plugin being developed
             SendText(_config.PollString);
 		}
 
@@ -415,10 +473,11 @@ namespace PureLinkPlugin
             #region links to bridge
             // trilist.setX means its coming from SIMPL
             trilist.SetString(joinMap.DeviceName.JoinNumber, Name);
-			trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);
+			//trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);
+            trilist.SetSigTrueAction(joinMap.Connect.JoinNumber, Connect);
+            trilist.SetSigTrueAction(joinMap.Disconnect.JoinNumber, Disconnect);
             trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);  
-		    trilist.SetSigTrueAction(joinMap.GetIpInfo.JoinNumber, GetIpInfo);
-            //Need to include additional trilist.setx for when analogs change           
+		    trilist.SetSigTrueAction(joinMap.GetIpInfo.JoinNumber, GetIpInfo);           
 
             // X.LinkInputSig is the feedback going back to SIMPL
 			ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
@@ -672,8 +731,6 @@ namespace PureLinkPlugin
             if (output > MaxIO || input > MaxIO)
                 return;
 
-            uint inputIndex = 0;
-            uint outputIndex = 0;
             var cmd = "";
 
             switch (signalType)
@@ -712,6 +769,10 @@ namespace PureLinkPlugin
         }
         #endregion
 
+        #region Misc Methods
+        /// <summary>
+        /// Plugin method to recall IP information
+        /// </summary>
 	    public void GetIpInfo()
 	    {
             Debug.Console(0, this, "properties.control.tcpSshProperties.method: {0}", _config.Control.Method.ToString());
@@ -720,8 +781,8 @@ namespace PureLinkPlugin
             Debug.Console(0, this, "_comms is connected: {0}", _comms.IsConnected.ToString());
             Debug.Console(0, this, "_comms is online: {0}", _commsMonitor.IsOnline.ToString());
             Debug.Console(0, this, "_comms status: {0}", _commsMonitor.Status.ToString());
-	    }
-
+        }
+        #endregion
     }
 }
 

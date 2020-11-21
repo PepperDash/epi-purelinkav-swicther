@@ -178,15 +178,33 @@ namespace PureLinkPlugin
 		[JsonProperty("errorTimeoutMs")]
 		public long ErrorTimeoutMs { get; set; }
 
+        /// <summary>
+        /// Plugin device ID property specfic to the switcher used to distinquish between cascading switchers
+        /// </summary>
         [JsonProperty("deviceId")]
         public string DeviceId { get; set; }
 
+        /// <summary>
+        /// Plugin model used to determine type of API Execute Switch commands to send
+        /// </summary>
+        [JsonProperty("model")]
+        public uint Model { get; set; }
+
+        /// <summary>
+        /// Plugin property for audio follows video
+        /// </summary>
         [JsonProperty("audioFollowsVideo")]
         public bool AudioFollowsVideo { get; set; }
 
+        /// <summary>
+        /// Plugin property for source inputs
+        /// </summary>
         [JsonProperty("inputs")]
         public Dictionary<uint, PureLinkEntryConfig> Inputs { get; set; }
 
+        /// <summary>
+        /// Plugin property for source outputs
+        /// </summary>
         [JsonProperty("outputs")]
         public Dictionary<uint, PureLinkEntryConfig> Outputs { get; set; }
 
@@ -205,16 +223,25 @@ namespace PureLinkPlugin
 	}
 
     /// <summary>
-    /// PureLink Entry Config for IO names
+    /// PureLink class creating properties for 'EntryConfig' IO names
     /// </summary>
     public class PureLinkEntryConfig
     {
+        /// <summary>
+        /// Generic source name. Name will override VideoName and AudioName if not defined.
+        /// </summary>
         [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
         public string Name { get; set; }
 
+        /// <summary>
+        /// Video source name
+        /// </summary>
         [JsonProperty("videoName", NullValueHandling = NullValueHandling.Ignore)]
         public string VideoName { get; set; }
 
+        /// <summary>
+        /// Audio source name
+        /// </summary>
         [JsonProperty("audioName", NullValueHandling = NullValueHandling.Ignore)]
         public string AudioName { get; set; }
     }

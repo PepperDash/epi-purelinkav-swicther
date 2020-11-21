@@ -4,7 +4,7 @@ namespace PureLinkPlugin
 {
     /// <summary>
     /// Plugin Bridge Join Maps were copied from PepperDash.Essentials.Core.Bridges.DmChassisControllerJoinMap 
-    /// <//summary>
+    /// </summary>
     /// <see cref="PepperDash.Essentials.Core.Bridges.DmChassisControllerJoinMap"/>
     public class PureLinkBridgeJoinMap : JoinMapBaseAdvanced
     {
@@ -33,11 +33,30 @@ namespace PureLinkPlugin
             });
 
         /// <summary>
-        /// Plugin connect join map
+        /// Plugin disconnect
         /// </summary>
         /// <remarks>
-        /// Typically used with socket based communications.  Connects (held) and disconnects (released) socket based communcations when triggered from SiMPL.
-        /// Additionally, the connection state feedback will report to SiMP Las a boolean value.
+        /// Typically used with socket based communications. Disconects the socket connection.
+        /// </remarks>
+        [JoinName("Disconnect")]
+        public JoinDataComplete Disconnect = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 1,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "Disconnects the socket connection",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
+                JoinType = eJoinType.Digital
+            });
+
+        /// <summary>
+        /// Plugin connect
+        /// </summary>
+        /// <remarks>
+        /// Typically used with socket based communications. Connects the socket connection.
         /// </remarks>
         [JoinName("Connect")]
         public JoinDataComplete Connect = new JoinDataComplete(
@@ -48,8 +67,8 @@ namespace PureLinkPlugin
             },
             new JoinMetadata
             {
-                Description = "Connect (Held)/Disconnect (Release) & Connect state feedback",
-                JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
+                Description = "Connects the socket connection",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
                 JoinType = eJoinType.Digital
             });
 
@@ -112,6 +131,7 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Digital
             });
+
         /// <summary>
         /// Poll outputs for video
         /// </summary>
@@ -132,6 +152,9 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Digital
             });
 
+        /// <summary>
+        /// Polls switcher for video input sync status
+        /// </summary>
         [JoinName("VideoSyncStatus")]
         public JoinDataComplete VideoSyncStatus = new JoinDataComplete(
             new JoinData
@@ -146,12 +169,14 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Digital
             });
 
-        // TODO [ ] Check join with Essentails DM
+        /// <summary>
+        /// Triggers and provides indication of audio follows video
+        /// </summary>
         [JoinName("AudioFollowsVideo")]
         public JoinDataComplete AudioFollowsVideo = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 2,
+                JoinNumber = 10,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -163,7 +188,6 @@ namespace PureLinkPlugin
 
         #endregion
 
-
         #region Analog
 
         // TODO [ ] Add analog joins below plugin being developed
@@ -172,7 +196,7 @@ namespace PureLinkPlugin
         /// Plugin status join map
         /// </summary>
         /// <remarks>
-        /// Typically used with socket based communications.  Reports the socket state to SiMPL as an analog value.
+        /// Typically used with socket based communications. Reports the socket state to SiMPL as an analog value.
         /// </remarks>
         /// <see cref="Crestron.SimplSharp.CrestronSockets.SocketStatus"/>
         [JoinName("Status")]
@@ -189,6 +213,29 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Analog
             });
 
+        /// <summary>
+        /// Plugin model join map 
+        /// </summary>
+        /// /// <remarks>
+        /// Typically used to indicate API type for Execute Switch calls.
+        /// </remarks>
+        [JoinName("Model")]
+        public JoinDataComplete Model = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 5,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "Model",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
+                JoinType = eJoinType.Analog
+            });
+
+        /// <summary>
+        /// Plugin video values for every output
+        /// </summary>
         [JoinName("OutputVideo")]
         public JoinDataComplete OutputVideo = new JoinDataComplete(
             new JoinData
@@ -203,6 +250,9 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Analog
             });
 
+        /// <summary>
+        /// Plugin audio values for every output
+        /// </summary>
         [JoinName("OutputAudio")]
         public JoinDataComplete OutputAudio = new JoinDataComplete(
             new JoinData
@@ -216,10 +266,7 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Analog
             });
-
-
         #endregion
-
 
         #region Serial
 
@@ -243,6 +290,7 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToSIMPL,
                 JoinType = eJoinType.Serial
             });
+
         /// <summary>
         /// Plugin input names assigned to sources. Name is generic and will not override the specific 'InputVideoNames' or 'InputAudioNames' if defined.
         /// </summary>
@@ -256,8 +304,9 @@ namespace PureLinkPlugin
         [JoinName("OutputNames")]
         public JoinDataComplete OutputNames = new JoinDataComplete(new JoinData { JoinNumber = 301, JoinSpan = 32 },
             new JoinMetadata { Description = "DM Chassis Output Name", JoinCapabilities = eJoinCapabilities.ToSIMPL, JoinType = eJoinType.Serial });
+
         /// <summary>
-        /// 
+        /// Plugin input video names assigned to sources.
         /// </summary>
         [JoinName("InputVideoNames")]
         public JoinDataComplete InputVideoNames =
@@ -269,6 +318,9 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Serial
             });
 
+        /// <summary>
+        /// Plugin input audio names assigned to sources.
+        /// </summary>
         [JoinName("InputAudioNames")]
         public JoinDataComplete InputAudioNames =
             new JoinDataComplete(new JoinData { JoinNumber = 701, JoinSpan = 200 },
@@ -278,6 +330,10 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Serial
             });
+
+        /// <summary>
+        /// Plugin output video names assigned to outputs.
+        /// </summary>
         [JoinName("OutputVideoNames")]
         public JoinDataComplete OutputVideoNames =
             new JoinDataComplete(new JoinData { JoinNumber = 901, JoinSpan = 200 },
@@ -287,6 +343,10 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Serial
             });
+
+        /// <summary>
+        /// Plugin output audio names assigned to outputs.
+        /// </summary>
         [JoinName("OutputAudioNames")]
         public JoinDataComplete OutputAudioNames =
             new JoinDataComplete(new JoinData { JoinNumber = 1001, JoinSpan = 200 },
@@ -297,13 +357,31 @@ namespace PureLinkPlugin
                 JoinType = eJoinType.Serial
             });
 
+        /// <summary>
+        /// Plugin video source name currently routed to output.
+        /// </summary>
         [JoinName("OutputCurrentVideoInputNames")]
-        public JoinDataComplete OutputCurrentVideoInputNames = new JoinDataComplete(new JoinData { JoinNumber = 2001, JoinSpan = 32 },
-            new JoinMetadata { Description = "DM Chassis Video Output Currently Routed Video Input Name", JoinCapabilities = eJoinCapabilities.ToSIMPL, JoinType = eJoinType.Serial });
+        public JoinDataComplete OutputCurrentVideoInputNames =
+            new JoinDataComplete(new JoinData { JoinNumber = 2001, JoinSpan = 32 },
+            new JoinMetadata
+            {
+                Description = "DM Chassis Video Output Currently Routed Video Input Name",
+                JoinCapabilities = eJoinCapabilities.ToSIMPL,
+                JoinType = eJoinType.Serial 
+            });
 
+        /// <summary>
+        /// Plugin audio source name currently routed to output.
+        /// </summary>
         [JoinName("OutputCurrentAudioInputNames")]
-        public JoinDataComplete OutputCurrentAudioInputNames = new JoinDataComplete(new JoinData { JoinNumber = 2201, JoinSpan = 32 },
-            new JoinMetadata { Description = "DM Chassis Audio Output Currently Routed Video Input Name", JoinCapabilities = eJoinCapabilities.ToSIMPL, JoinType = eJoinType.Serial });
+        public JoinDataComplete OutputCurrentAudioInputNames =
+            new JoinDataComplete(new JoinData { JoinNumber = 2201, JoinSpan = 32 },
+            new JoinMetadata
+            {
+                Description = "DM Chassis Audio Output Currently Routed Video Input Name",
+                JoinCapabilities = eJoinCapabilities.ToSIMPL,
+                JoinType = eJoinType.Serial
+            });
 
 
         #endregion

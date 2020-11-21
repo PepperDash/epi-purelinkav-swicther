@@ -22,7 +22,7 @@ namespace PureLinkPlugin
 		/// Plugin device factory constructor
 		/// </summary>
 		/// <remarks>
-		/// Update the MinimumEssentialsFrameworkVersion & TypeNames as needed when creating a plugin
+		/// Update the MinimumEssentialsFrameworkVersion and TypeNames as needed when creating a plugin
 		/// </remarks>
 		/// <example>
 		/// Set the minimum Essentials Framework Version
@@ -41,7 +41,7 @@ namespace PureLinkPlugin
 			MinimumEssentialsFrameworkVersion = "1.6.6";
 
 			// In the constructor we initialize the list with the typenames that will build an instance of this device
-			// TODO [ ] Update the TypeNames for the plugin being developed            
+			// TODO [X] Update the TypeNames for the plugin being developed. Note TypeName is not case sensitive.           
 			TypeNames = new List<string>() { "PureLink", "MediaAxis" };
 		}
 
