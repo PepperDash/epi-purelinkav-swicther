@@ -32,7 +32,7 @@ namespace PureLinkPlugin
         /// "*999?version!" - Check firmware version
         /// "*999I000!" - Check ruoters ID
         /// "“*255sI Router ID 255" - Response from router ID check
-        /// "*255?ALLIO!" - Check video status of all inputs and outputs
+        /// "*255V?ALLIO!" - Check video status of all inputs and outputs
         /// "*255A?ALLIO!" - Check audio status of all inputs and outputs
         /// "*255DALLIO!" - Disconnect video and audio, 
         /// "*255VDALLIO!" - Disconnect video, all inputs and outputs
@@ -162,10 +162,11 @@ namespace PureLinkPlugin
                 _config.ErrorTimeoutMs = 300000;
 
             // TODO [X] Do error and warning as well
+
 			ConnectFeedback = new BoolFeedback(() => Connect);
 			OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             AudioFollowsVideoFeedback = new BoolFeedback(() => _config.AudioFollowsVideo);
-			StatusFeedback = new IntFeedback(() => (int)_commsMonitor.Status);
+		    StatusFeedback = new IntFeedback(GetSocketStatus);
 
             InputVideoNameFeedbacks = new Dictionary<uint, StringFeedback>();
             InputAudioNameFeedbacks = new Dictionary<uint, StringFeedback>();
@@ -177,15 +178,19 @@ namespace PureLinkPlugin
             OutputCurrentAudioValueFeedbacks = new Dictionary<uint, IntFeedback>();
 
 			_comms = comms;
-			_commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
+            // The comms monitor polls your device
+            // The _commsMonitor.Status only changes based on the values placed in the Poll times
+            // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
+			_commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);		     
+            // _commsMonitor.StatusChange += (sender, args) => StatusFeedback.FireUpdate();
 
-			var socket = _comms as ISocketStatus;
-			if (socket != null)
-			{
-				// device comms is IP **ELSE** device comms is RS232
-				socket.ConnectionChange += socket_ConnectionChange;
-				Connect = true;
-			}
+            var socket = _comms as ISocketStatus;
+            if (socket != null)
+            {
+                // device comms is IP **ELSE** device comms is RS232
+                socket.ConnectionChange += socket_ConnectionChange;
+                Connect = true;
+            }
 
 			#region Communication data event handlers.  Comment out any that don't apply to the API type                      			
 
@@ -201,6 +206,14 @@ namespace PureLinkPlugin
 			Debug.Console(0, this, "Constructing new {0} instance complete", name);
 			Debug.Console(0, new string('*', 80));
 			Debug.Console(0, new string('*', 80));
+		}
+
+        private int GetSocketStatus()
+        {
+                var tempSocket = _comms as ISocketStatus;
+                // Check if tempSocket is null as protection in case the JSON didn't implement it
+			    if (tempSocket == null) return 0;
+			    return (int)tempSocket.ClientStatus;
 		}
 
 	    private void InitializeOutputNames(Dictionary<uint, PureLinkEntryConfig> outputs)
@@ -275,8 +288,8 @@ namespace PureLinkPlugin
 			if (ConnectFeedback != null)
 				ConnectFeedback.FireUpdate();
 
-			if (StatusFeedback != null)
-				StatusFeedback.FireUpdate();
+            if (StatusFeedback != null)
+                StatusFeedback.FireUpdate();
 		}
 
 		// TODO [X] If using an API with a delimeter, keep the method below
@@ -352,7 +365,7 @@ namespace PureLinkPlugin
 		public void SendText(string text)
 		{
 			if (string.IsNullOrEmpty(text)) return;
-
+            Debug.Console(2, this, "SendText({0})", text);
 			_comms.SendText(string.Format("{0}{1}", text, CommsDelimiter));
 		}
 
@@ -390,7 +403,6 @@ namespace PureLinkPlugin
 			}
 
 			var customJoins = JoinMapHelper.TryGetJoinMapAdvancedForDevice(joinMapKey);
-
 			if (customJoins != null)
 			{
 				joinMap.SetCustomJoinData(customJoins);
@@ -399,12 +411,13 @@ namespace PureLinkPlugin
 			Debug.Console(1, "Linking to Trilist '{0}'", trilist.ID.ToString("X"));
 			Debug.Console(0, "Linking to Bridge Type {0}", GetType().Name);
 
-			// TODO [ ] Implement bridge links as needed
+			// TODO [X] Implement bridge links as needed
             #region links to bridge
             // trilist.setX means its coming from SIMPL
             trilist.SetString(joinMap.DeviceName.JoinNumber, Name);
 			trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);
-            trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);
+            trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);  
+		    trilist.SetSigTrueAction(joinMap.GetIpInfo.JoinNumber, GetIpInfo);
             //Need to include additional trilist.setx for when analogs change           
 
             // X.LinkInputSig is the feedback going back to SIMPL
@@ -698,6 +711,17 @@ namespace PureLinkPlugin
             }
         }
         #endregion
-	}
+
+	    public void GetIpInfo()
+	    {
+            Debug.Console(0, this, "properties.control.tcpSshProperties.method: {0}", _config.Control.Method.ToString());
+            Debug.Console(0, this, "properties.control.tcpSshProperties.address: {0}", _config.Control.TcpSshProperties.Address);
+            Debug.Console(0, this, "properties.control.tcpSshProperties.port: {0}", _config.Control.TcpSshProperties.Port);
+            Debug.Console(0, this, "_comms is connected: {0}", _comms.IsConnected.ToString());
+            Debug.Console(0, this, "_comms is online: {0}", _commsMonitor.IsOnline.ToString());
+            Debug.Console(0, this, "_comms status: {0}", _commsMonitor.Status.ToString());
+	    }
+
+    }
 }
 

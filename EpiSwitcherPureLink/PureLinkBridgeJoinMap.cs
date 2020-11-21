@@ -10,7 +10,7 @@ namespace PureLinkPlugin
     {
         #region Digital
 
-        // TODO [ ] Add digital joins below plugin being developed
+        // TODO [X] Add digital joins below plugin being developed
 
         /// <summary>
         /// Plugin online join map
@@ -50,6 +50,26 @@ namespace PureLinkPlugin
             {
                 Description = "Connect (Held)/Disconnect (Release) & Connect state feedback",
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
+                JoinType = eJoinType.Digital
+            });
+
+        /// <summary>
+        /// Plugin Get IP Info
+        /// </summary>
+        /// <remarks>
+        /// When triggered returns configured IP information
+        /// </remarks>
+        [JoinName("GetIpInfo")]
+        public JoinDataComplete GetIpInfo = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 3,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "When triggered returns configured IP information",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
                 JoinType = eJoinType.Digital
             });
 
