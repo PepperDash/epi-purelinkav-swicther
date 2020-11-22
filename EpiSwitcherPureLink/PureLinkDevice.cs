@@ -205,6 +205,12 @@ namespace PureLinkPlugin
 		    if (string.IsNullOrEmpty(_config.DeviceId))
 		        _config.DeviceId = "999";
 
+            if (_config.Model < 1)
+            {
+                Debug.Console(2, this, "Config Model value invalid. Current value: {0}. Valid values are 0 or 1. Setting value to 0.", _config.Model.ToString());
+                _config.Model = 0;
+            }
+
             // Consider enforcing default poll values IF NOT DEFINED in the JSON config
 		    if (string.IsNullOrEmpty(_config.PollString))
                 _config.PollString = PollString;
@@ -377,7 +383,7 @@ namespace PureLinkPlugin
                 Debug.Console(2, this, "HandleLineReceived data:{0}", data);
 
 
-                if (data.ToLower().Contains("Command Code Error"))
+                if (data.ToLower().Contains("Command Code Error!"))
                 {
                     Debug.Console(2, this, "Received Command Code Error");
                     return;
@@ -610,12 +616,9 @@ namespace PureLinkPlugin
             foreach (var item in OutputCurrentAudioNameFeedbacks)
                 item.Value.FireUpdate();
 		}
-
 		#endregion Overrides of EssentialsBridgeableDevice
 
         #region ParseData
-
-  
         private void ProcessAudioVideoUpdateResponse(string response)
         {
             try
@@ -739,7 +742,10 @@ namespace PureLinkPlugin
                     {
                         // TODO [X] Add routing command
                         // Example command *255CI01O08! = Connect Audio Input 1 to Output 8
-                        cmd = string.Format("{0}{1}CI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        if(_config.Model == 0)
+                            cmd = string.Format("{0}{1}CI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        else if(_config.Model == 1)
+                            cmd = string.Format("{0}{1}CI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         SendText(cmd);
                         break;
                     }
@@ -747,12 +753,18 @@ namespace PureLinkPlugin
                     {
                         // TODO [X] Add routing command
                         // Example command *255VCI01O08! = Connect Audio Input 1 to Output 8
-                        cmd = string.Format("{0}{1}VCI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        if(_config.Model == 0)
+                            cmd = string.Format("{0}{1}VCI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        else if (_config.Model == 1)
+                            cmd = string.Format("{0}{1}VCI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         SendText(cmd);
 
                         if (_config.AudioFollowsVideo == true)
                         {
-                            cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            if(_config.Model == 0)
+                                cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            else if (_config.Model == 1)
+                                cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                             SendText(cmd);
                         }
                         break;
@@ -761,7 +773,10 @@ namespace PureLinkPlugin
                     {
                         // TODO [X] Add routing command
                         // Example command *255ACI01O08! = Connect Audio Input 1 to Output 8
-                        cmd = string.Format("{0}{1}ACI{02}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        if(_config.Model == 0)
+                            cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                        else if (_config.Model == 1)
+                            cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         SendText(cmd);
                         break;
                     }
