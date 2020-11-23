@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Crestron.SimplSharp;
 using Crestron.SimplSharp.Ssh;
 using Crestron.SimplSharpPro.DeviceSupport;
+using Crestron.SimplSharpPro.CrestronThread;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
@@ -46,6 +48,12 @@ namespace PureLinkPlugin
         private const string StartChar = "*";
         private const string EndChar = "!";
         private const int MaxIO = 72;
+
+        private CrestronQueue<string> _commsQueue;
+        private CCriticalSection _commsQueueLock;
+
+        private CrestronQueue<string> _parserQueue;
+        private CCriticalSection _parserLock;
 
         private readonly PureLinkCmdProcessor cmdProcessor = new PureLinkCmdProcessor();
         
@@ -621,14 +629,24 @@ namespace PureLinkPlugin
         #region ParseData
         private void ProcessAudioVideoUpdateResponse(string response)
         {
+            var input = 0;
+            var output = 0;
+
             try
             {
                 // The INPUT value should always start at positional value 7 and include position 7 & 8
                 // The OUTPUT value should alwsys start at positionla value 10 and include position 10 & 11
                 // Example response, '*255CI01O01!'
-
-                var input = Convert.ToInt32(response.Remove(7, 8));
-                var output = Convert.ToInt32(response.Remove(10, 11));
+                if (_config.Model == 0)
+                {
+                    input = Convert.ToInt32(response.Remove(7, 8));
+                    output = Convert.ToInt32(response.Remove(10, 11));
+                }
+                else if (_config.Model == 1)
+                {
+                    input = Convert.ToInt32(response.Remove(8, 9));
+                    output = Convert.ToInt32(response.Remove(11, 12));
+                }
                 Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateVideoRoute(output, input);
@@ -641,11 +659,23 @@ namespace PureLinkPlugin
 
         private void ProcessVideoUpdateResponse(string response)
         {
+            var input = 0;
+            var output = 0;
+
             try
             {
                 // Example response, '*255VCI01O01!'
-                var input = Convert.ToInt32(response.Remove(8, 9));
-                var output = Convert.ToInt32(response.Remove(11, 12));
+                if (_config.Model == 0)
+                {
+                    input = Convert.ToInt32(response.Remove(8, 9));
+                    output = Convert.ToInt32(response.Remove(11, 12));
+                }
+                else if (_config.Model == 1)
+                {
+                    input = Convert.ToInt32(response.Remove(9, 10));
+                    output = Convert.ToInt32(response.Remove(13, 14));
+                }
+
                 Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateVideoRoute(output, input);
@@ -658,12 +688,22 @@ namespace PureLinkPlugin
 
         private void ProcessAudioUpdateResponse(string response)
         {
+            var input = 0;
+            var output = 0;
+
             try
             {
                 // Example response, '*255ACI01O01!'
-
-                var input = Convert.ToInt32(response.Remove(8, 9));
-                var output = Convert.ToInt32(response.Remove(11, 12));
+                if (_config.Model == 0)
+                {
+                    input = Convert.ToInt32(response.Remove(8, 9));
+                    output = Convert.ToInt32(response.Remove(11, 12));
+                }
+                else if (_config.Model == 1)
+                {
+                    input = Convert.ToInt32(response.Remove(9, 10));
+                    output = Convert.ToInt32(response.Remove(13, 14));
+                }
                 Debug.Console(2, this, "ProcessAudioUpdateResponse Input:{0} Output: {1}\r", input, output);
                 if (output == 0) return;
                 UpdateAudioRoute(output, input);
@@ -714,7 +754,52 @@ namespace PureLinkPlugin
         }
         #endregion
 
-        #region ExecuteSwitch
+        #region EnqueueSentText DequeueSentText ExecuteSwitch
+
+        /// <summary>
+        /// Enqueues the SendText mehtod with a command
+        /// </summary>
+        /// <param name="cmd">string command to be enqueued in the SendText method, not including the delimiter</param>
+        public void EnqueueSendText(string cmd)
+        {
+            if (cmd == null)
+                return;
+
+            _commsQueue.TryToEnqueue(cmd);
+
+            var lockState = _commsQueueLock.TryEnter();
+            if (lockState)
+                CrestronInvoke.BeginInvoke((o) => DequeueSendText());
+        }
+
+        /// <summary>
+        /// Plugin dequeue and call SentText() method
+        /// </summary>
+        private void DequeueSendText()
+        {
+            try
+            {
+                while (true)
+                {
+                    //var cmd = _commsQueue.TryToDequeue();
+                    var cmd = _commsQueue.Dequeue();
+                    if (!string.IsNullOrEmpty(cmd))
+                    {
+                        SendText(cmd);
+                        //Thread.Sleep(200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, "DequeueSendText Exception: {0}", ex);
+            }
+            finally
+            {
+                if (_commsQueueLock != null)
+                    _commsQueueLock.Leave();
+            }
+        }
 
         /// <summary>
         /// Executes switch
@@ -746,7 +831,8 @@ namespace PureLinkPlugin
                             cmd = string.Format("{0}{1}CI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         else if(_config.Model == 1)
                             cmd = string.Format("{0}{1}CI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Video:
@@ -757,7 +843,8 @@ namespace PureLinkPlugin
                             cmd = string.Format("{0}{1}VCI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         else if (_config.Model == 1)
                             cmd = string.Format("{0}{1}VCI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
 
                         if (_config.AudioFollowsVideo == true)
                         {
@@ -765,7 +852,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                             else if (_config.Model == 1)
                                 cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                            SendText(cmd);
+                            EnqueueSendText(cmd);
+                            //SendText(cmd);
                         }
                         break;
                     }
@@ -777,7 +865,8 @@ namespace PureLinkPlugin
                             cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
                         else if (_config.Model == 1)
                             cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
             }
