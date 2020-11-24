@@ -71,7 +71,7 @@ namespace PureLinkPlugin
 		/// <summary>
 		/// Set this value to that of the delimiter used by the API (if applicable)
 		/// </summary>
-		private const string CommsDelimiter = "!\r\n";
+		private const string CommsDelimiter = "!\r";
 
         /// <summary>
         /// Connects/Disconnects the comms of the plugin device
@@ -389,20 +389,24 @@ namespace PureLinkPlugin
                     return;
                 }
 
-                if (data.ToLower().Contains("sC"))
+                if (data.ToLower().Contains("sc"))
                 {
                     Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.AudioVideo));
+                    cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.AudioVideo));
                 }
-                else if (data.ToLower().Contains("sV"))
+                else if (data.ToLower().Contains("sv"))
                 {
                     Debug.Console(2, this, "Received Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.Video));
+                    cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.Video));
                 }
-                else if (data.ToLower().Contains("sA"))
+                else if (data.ToLower().Contains("sa"))
                 {
                     Debug.Console(2, this, "Received Audio Switch FB");
-                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.Audio));
+                    cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.Audio));
+                }
+                else
+                {
+                    Debug.Console(2, this, "HandleLineReceived: No matches found");
                 }
             }
             catch (Exception ex)
@@ -423,7 +427,7 @@ namespace PureLinkPlugin
 		{
 			if (string.IsNullOrEmpty(text)) return;
             Debug.Console(2, this, "SendText = {0}{1}", text, CommsDelimiter);
-			_comms.SendText(string.Format("{0}{1}", text, CommsDelimiter));
+			_comms.SendText(string.Format("{0}{1}{2}", text, CommsDelimiter, "\n"));
 		}
 
 		/// <summary>
@@ -612,14 +616,18 @@ namespace PureLinkPlugin
 		#endregion Overrides of EssentialsBridgeableDevice
 
         #region ParseData
+        /// <summary>
+        /// Plugin public eumermeration with only three values including: Audio, Video, or AudioVideo
+        /// </summary>
         public enum RouteType{Audio, Video, AudioVideo}
 
 	    /// <summary>
         /// Plugin parse method calling for Regex pattern on incoming Handle_LineReceived data
         /// </summary>
         /// <param name="response"></param>
+        /// <param name="type"></param>
         /// <returns></returns>
-        public void ParseIOResponse(string response, RouteType type)        
+        public void ParseIoResponse(string response, RouteType type)        
         {
 	        try
 	        {
@@ -635,10 +643,16 @@ namespace PureLinkPlugin
                 Debug.Console(0, this, "matches.Groups.Count: {0}", matches.Groups.Count);
                 foreach (Match match in matches.Groups)
                 {
-                    if (match.Groups.Count != 3)
+                    if (match.Groups.Count != 4)
                     {
                         return;
                     }
+
+                    Debug.Console(0, this, "match = {0}", match.ToString());
+                    Debug.Console(0, this, "match.Groups 0 = {0}", match.Groups[0].ToString());
+                    Debug.Console(0, this, "match.Groups 1 = {0}", match.Groups[1].ToString());
+                    Debug.Console(0, this, "match.Groups 2 = {0}", match.Groups[2].ToString());
+                    Debug.Console(0, this, "match.Groups 3 = {0}", match.Groups[3].ToString());
 
                     var output = UInt16.Parse(match.Groups[2].Value);
                     var input = UInt16.Parse(match.Groups[1].Value);
@@ -653,7 +667,7 @@ namespace PureLinkPlugin
 	        catch (Exception ex)
 	        {
 
-                Debug.ConsoleWithLog(0, this, "ParseIOResponse Exception:{0}\r", ex.Message);
+                Debug.ConsoleWithLog(0, this, "ParseIoResponse Exception:{0}\r", ex.Message);
 	        }
         }
 
@@ -757,10 +771,11 @@ namespace PureLinkPlugin
 
             Debug.Console(2, this, "ExecuteSwitch({0}, {1}, {2}, {3})", _config.Model.ToString(), input, output, signalType.ToString());
 
-            if (output < 0 || input < 0)
-                return;
             if (output > MaxIO || input > MaxIO)
+            {
+                Debug.Console(1, this, "ExecuteSwitch IO invalid, values greater than MaxIO. Output: {0}, Input: {1}, MaxIO: {3}", output, input, MaxIO);
                 return;
+            }
 
             var cmd = "";
 
@@ -779,7 +794,8 @@ namespace PureLinkPlugin
                     }
                 case eRoutingSignalType.Video:
                     {
-                        // Example command *255VCI01O08! = Connect Audio Input 1 to Output 8
+                        // Example command = *255VCI004O001! = Connect video Input 4 to Output 1
+                        // Example response = *255sVCI004O001!
                         if(_config.Model == 0)
                             cmd = string.Format("{0}{1}VCI{2}O{3}", StartChar, _config.DeviceId, input, output);
                         else if (_config.Model == 1)
