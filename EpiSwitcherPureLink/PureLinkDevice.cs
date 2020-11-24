@@ -71,7 +71,7 @@ namespace PureLinkPlugin
 		/// <summary>
 		/// Set this value to that of the delimiter used by the API (if applicable)
 		/// </summary>
-		private const string CommsDelimiter = "!\n";
+		private const string CommsDelimiter = "!\r\n";
 
         /// <summary>
         /// Connects/Disconnects the comms of the plugin device
@@ -392,17 +392,17 @@ namespace PureLinkPlugin
                 if (data.ToLower().Contains("sC"))
                 {
                     Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.AudioVideo));
+                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.AudioVideo));
                 }
                 else if (data.ToLower().Contains("sV"))
                 {
                     Debug.Console(2, this, "Received Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.Video));
+                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.Video));
                 }
                 else if (data.ToLower().Contains("sA"))
                 {
                     Debug.Console(2, this, "Received Audio Switch FB");
-                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.Audio));
+                    cmdProcessor.EnqueueTask(() => ParseIOResponse(data, RouteType.Audio));
                 }
             }
             catch (Exception ex)
@@ -619,7 +619,7 @@ namespace PureLinkPlugin
         /// </summary>
         /// <param name="response"></param>
         /// <returns></returns>
-        public void parseIOResponse(string response, RouteType type)        
+        public void ParseIOResponse(string response, RouteType type)        
         {
 	        try
 	        {
@@ -653,7 +653,7 @@ namespace PureLinkPlugin
 	        catch (Exception ex)
 	        {
 
-                Debug.ConsoleWithLog(0, this, "parseIOResponse Exception:{0}\r", ex.Message);
+                Debug.ConsoleWithLog(0, this, "ParseIOResponse Exception:{0}\r", ex.Message);
 	        }
         }
 
