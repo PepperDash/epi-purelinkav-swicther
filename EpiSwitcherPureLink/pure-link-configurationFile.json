@@ -32,8 +32,8 @@
 					"control": {
 						"method": "tcpIp",
 						"tcpSshProperties": {
-							"address": "10.1.10.109",
-							"port": 5221,
+							"address": "172.16.0.202",
+							"port": 23,
 							"autoReconnect": true,
 							"autoReconnectIntervalMs": 10000,
 							"username": "",
@@ -41,7 +41,7 @@
 						}
 					},
                     "pollTimeMs": 60000,
-                    "pollString": "*255H000!",
+                    "pollString": "*255H000",
 					"warningTimeoutMs": 120000,
                     "errorTimeoutMs": 180000,
                     "deviceId": 255,

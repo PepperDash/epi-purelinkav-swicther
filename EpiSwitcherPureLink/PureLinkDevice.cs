@@ -46,7 +46,6 @@ namespace PureLinkPlugin
        
         private const string PollString = "*999?version!";
         private const string StartChar = "*";
-        private const string EndChar = "!";
         private const int MaxIO = 72;
 
         private CrestronQueue<string> _commsQueue;
@@ -72,31 +71,18 @@ namespace PureLinkPlugin
 		/// <summary>
 		/// Set this value to that of the delimiter used by the API (if applicable)
 		/// </summary>
-		private const string CommsDelimiter = "\n";
+		private const string CommsDelimiter = "!\n";
 
-        ///// <summary>
-        ///// Connects/Disconnects the comms of the plugin device
-        ///// </summary>
-        ///// <remarks>
-        ///// triggers the _comms.Connect/Disconnect as well as thee comms monitor start/stop
-        ///// </remarks>
-        //public bool Connect
-        //{
-        //    get { return _comms.IsConnected; }
-        //    set
-        //    {
-        //        if (value)
-        //        {
-        //            _comms.Connect();
-        //            _commsMonitor.Start();				
-        //        }
-        //        else
-        //        {
-        //            _comms.Disconnect();
-        //            _commsMonitor.Stop();
-        //        }
-        //    }
-        //}
+        /// <summary>
+        /// Connects/Disconnects the comms of the plugin device
+        /// </summary>
+        /// <remarks>
+        /// triggers the _comms.Connect/Disconnect as well as thee comms monitor start/stop
+        /// </remarks>
+        public bool ConnectFb
+        {
+            get { return _comms.IsConnected; }
+        }
 
         /// <summary>
         /// Connects the comms of the plugin device
@@ -106,6 +92,10 @@ namespace PureLinkPlugin
         /// </remarks>
         public void Connect()
         {
+            if (_comms.IsConnected)
+            {
+                return;
+            }
             _comms.Connect();
             _commsMonitor.Start();
         }
@@ -118,6 +108,10 @@ namespace PureLinkPlugin
         /// </remarks>
         public void Disconnect()
         {
+            if (!_comms.IsConnected)
+            {
+                return;
+            }
             _comms.Disconnect();
             _commsMonitor.Stop();
         }
@@ -232,9 +226,7 @@ namespace PureLinkPlugin
             if (_config.ErrorTimeoutMs == 0)
                 _config.ErrorTimeoutMs = 300000;
 
-            // TODO [X] Do error and warning as well
-
-			//ConnectFeedback = new BoolFeedback(() => Connect);
+			ConnectFeedback = new BoolFeedback(() => ConnectFb);
 			OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             AudioFollowsVideoFeedback = new BoolFeedback(() => _config.AudioFollowsVideo);
 		    StatusFeedback = new IntFeedback(GetSocketStatus);
@@ -400,24 +392,17 @@ namespace PureLinkPlugin
                 if (data.ToLower().Contains("sC"))
                 {
                     Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessAudioVideoUpdateResponse(data));
-                    return;
+                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.AudioVideo));
                 }
-                else if (data.ToLower().Contains("sVC"))
+                else if (data.ToLower().Contains("sV"))
                 {
                     Debug.Console(2, this, "Received Video Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessVideoUpdateResponse(data));
-                    return;
+                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.Video));
                 }
-                else if (data.ToLower().Contains("sAC"))
+                else if (data.ToLower().Contains("sA"))
                 {
                     Debug.Console(2, this, "Received Audio Switch FB");
-                    cmdProcessor.EnqueueTask(() => ProcessAudioUpdateResponse(data));
-                    return;
-                }
-                else
-                {
-                    return;
+                    cmdProcessor.EnqueueTask(() => parseIOResponse(data, RouteType.Audio));
                 }
             }
             catch (Exception ex)
@@ -437,7 +422,7 @@ namespace PureLinkPlugin
 		public void SendText(string text)
 		{
 			if (string.IsNullOrEmpty(text)) return;
-            Debug.Console(2, this, "SendText({0})", text);
+            Debug.Console(2, this, "SendText = {0}{1}", text, CommsDelimiter);
 			_comms.SendText(string.Format("{0}{1}", text, CommsDelimiter));
 		}
 
@@ -458,7 +443,7 @@ namespace PureLinkPlugin
 	    #region Overrides of EssentialsBridgeableDevice
 
 		/// <summary>
-		/// Links the plugin device to the EISC bridge
+		/// Links the plugin device to the EISC bridge Post Activation
 		/// </summary>
 		/// <param name="trilist"></param>
 		/// <param name="joinStart"></param>
@@ -485,25 +470,24 @@ namespace PureLinkPlugin
 
 			// TODO [X] Implement bridge links as needed
             #region links to bridge
-            // trilist.setX means its coming from SIMPL
+            // trilist.setX means its coming from SIMPL            
             trilist.SetString(joinMap.DeviceName.JoinNumber, Name);
-			//trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);
+			//trilist.SetBoolSigAction(joinMap.Connect.JoinNumber, sig => Connect = sig);            
             trilist.SetSigTrueAction(joinMap.Connect.JoinNumber, Connect);
             trilist.SetSigTrueAction(joinMap.Disconnect.JoinNumber, Disconnect);
-            trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);  
-		    trilist.SetSigTrueAction(joinMap.GetIpInfo.JoinNumber, GetIpInfo);           
-
+            trilist.SetBoolSigAction(joinMap.AudioFollowsVideo.JoinNumber, SetAudioFollowsVideo);
+            trilist.SetSigTrueAction(joinMap.GetIpInfo.JoinNumber, GetIpInfo);
+            
             // X.LinkInputSig is the feedback going back to SIMPL
-			ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
-			StatusFeedback.LinkInputSig(trilist.UShortInput[joinMap.Status.JoinNumber]);
-			OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);                                           
+            ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
+            StatusFeedback.LinkInputSig(trilist.UShortInput[joinMap.Status.JoinNumber]);
+            OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);
             AudioFollowsVideoFeedback.LinkInputSig(trilist.BooleanInput[joinMap.AudioFollowsVideo.JoinNumber]);
-
+            
             // TODO [X] Need to update poll method
             // TODO [X] Reference your poll string in your poll method
             // TODO [X] Need execute switch > determine input or output number > then sendText()
-            // TODO [ ] Add parsing routines within the handlelinereceived
-
+            // TODO [X] Add parsing routines within the handlelinereceived
 		    for (var x = 1; x <= joinMap.OutputVideo.JoinSpan; x++)
 		    {
 		        var joinActual = x + joinMap.OutputVideo.JoinNumber - 1;
@@ -576,6 +560,7 @@ namespace PureLinkPlugin
             }
 
 			UpdateFeedbacks();
+		    Connect();
 
 			trilist.OnlineStatusChange += (o, a) =>
 			{
@@ -627,91 +612,49 @@ namespace PureLinkPlugin
 		#endregion Overrides of EssentialsBridgeableDevice
 
         #region ParseData
-        private void ProcessAudioVideoUpdateResponse(string response)
+        public enum RouteType{Audio, Video, AudioVideo}
+
+	    /// <summary>
+        /// Plugin parse method calling for Regex pattern on incoming Handle_LineReceived data
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        public void parseIOResponse(string response, RouteType type)        
         {
-            var input = 0;
-            var output = 0;
+	        try
+	        {
+                //Get string response and return an array of IO
+                //The '@' character below means its a string literal
+                var regex = new Regex(@"(I(\d{3})O(\d{3}))");
+                var matches = regex.Match(response);
 
-            try
-            {
-                // The INPUT value should always start at positional value 7 and include position 7 & 8
-                // The OUTPUT value should alwsys start at positionla value 10 and include position 10 & 11
-                // Example response, '*255CI01O01!'
-                if (_config.Model == 0)
-                {
-                    input = Convert.ToInt32(response.Remove(7, 8));
-                    output = Convert.ToInt32(response.Remove(10, 11));
-                }
-                else if (_config.Model == 1)
-                {
-                    input = Convert.ToInt32(response.Remove(8, 9));
-                    output = Convert.ToInt32(response.Remove(11, 12));
-                }
-                Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
-                if (output == 0) return;
-                UpdateVideoRoute(output, input);
-            }
-            catch (Exception ex)
-            {
-                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
-            }
-        }
+                Debug.Console(0, this, "Group 0 = {0}", matches.Groups[0]);
 
-        private void ProcessVideoUpdateResponse(string response)
-        {
-            var input = 0;
-            var output = 0;
+                if (matches.Groups == null) return;
 
-            try
-            {
-                // Example response, '*255VCI01O01!'
-                if (_config.Model == 0)
+                Debug.Console(0, this, "matches.Groups.Count: {0}", matches.Groups.Count);
+                foreach (Match match in matches.Groups)
                 {
-                    input = Convert.ToInt32(response.Remove(8, 9));
-                    output = Convert.ToInt32(response.Remove(11, 12));
-                }
-                else if (_config.Model == 1)
-                {
-                    input = Convert.ToInt32(response.Remove(9, 10));
-                    output = Convert.ToInt32(response.Remove(13, 14));
+                    if (match.Groups.Count != 3)
+                    {
+                        return;
+                    }
+
+                    var output = UInt16.Parse(match.Groups[2].Value);
+                    var input = UInt16.Parse(match.Groups[1].Value);
+
+                    if (type == RouteType.Video || type == RouteType.AudioVideo)
+                        UpdateVideoRoute(output, input);
+                    if (type == RouteType.Audio || type == RouteType.AudioVideo)
+                        UpdateAudioRoute(output, input);
                 }
 
-                Debug.Console(2, this, "ProcessVideoUpdateResponse Input:{0} Output: {1}\r", input, output);
-                if (output == 0) return;
-                UpdateVideoRoute(output, input);
-            }
-            catch (Exception ex)
-            {
-                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
-            }
-        }
+	        }
+	        catch (Exception ex)
+	        {
 
-        private void ProcessAudioUpdateResponse(string response)
-        {
-            var input = 0;
-            var output = 0;
-
-            try
-            {
-                // Example response, '*255ACI01O01!'
-                if (_config.Model == 0)
-                {
-                    input = Convert.ToInt32(response.Remove(8, 9));
-                    output = Convert.ToInt32(response.Remove(11, 12));
-                }
-                else if (_config.Model == 1)
-                {
-                    input = Convert.ToInt32(response.Remove(9, 10));
-                    output = Convert.ToInt32(response.Remove(13, 14));
-                }
-                Debug.Console(2, this, "ProcessAudioUpdateResponse Input:{0} Output: {1}\r", input, output);
-                if (output == 0) return;
-                UpdateAudioRoute(output, input);
-            }
-            catch (Exception ex)
-            {
-                Debug.ConsoleWithLog(0, this, "ProcessVideoUpdateResponse Exception:{0}\r", ex.Message);
-            }
+                Debug.ConsoleWithLog(0, this, "parseIOResponse Exception:{0}\r", ex.Message);
+	        }
         }
 
         private void UpdateVideoRoute(int output, int value)
@@ -812,7 +755,7 @@ namespace PureLinkPlugin
             var input = Convert.ToUInt32(inputSelector);
             var output = Convert.ToUInt32(outputSelector);
 
-            Debug.Console(2, this, "ExecuteSwitch({0}, {1}, {2})", input, output, signalType.ToString());
+            Debug.Console(2, this, "ExecuteSwitch({0}, {1}, {2}, {3})", _config.Model.ToString(), input, output, signalType.ToString());
 
             if (output < 0 || input < 0)
                 return;
@@ -825,53 +768,50 @@ namespace PureLinkPlugin
             {
                 case eRoutingSignalType.AudioVideo:
                     {
-                        // TODO [X] Add routing command
-                        // Example command *255CI01O08! = Connect Audio Input 1 to Output 8
+                        // Example command *255CI01O08! = Connect Audio/Video Input 1 to Output 8
                         if(_config.Model == 0)
-                            cmd = string.Format("{0}{1}CI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            cmd = string.Format("{0}{1}CI{2}O{3}", StartChar, _config.DeviceId, input, output);
                         else if(_config.Model == 1)
-                            cmd = string.Format("{0}{1}CI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        EnqueueSendText(cmd);
-                        //SendText(cmd);
+                            cmd = string.Format("{0}{1}CI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
+                        //EnqueueSendText(cmd);
+                        SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Video:
                     {
-                        // TODO [X] Add routing command
                         // Example command *255VCI01O08! = Connect Audio Input 1 to Output 8
                         if(_config.Model == 0)
-                            cmd = string.Format("{0}{1}VCI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            cmd = string.Format("{0}{1}VCI{2}O{3}", StartChar, _config.DeviceId, input, output);
                         else if (_config.Model == 1)
-                            cmd = string.Format("{0}{1}VCI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        EnqueueSendText(cmd);
-                        //SendText(cmd);
+                            cmd = string.Format("{0}{1}VCI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
+                        //EnqueueSendText(cmd);
+                        SendText(cmd);
 
                         if (_config.AudioFollowsVideo == true)
                         {
                             if(_config.Model == 0)
-                                cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                                cmd = string.Format("{0}{1}ACI{2}O{3}", StartChar, _config.DeviceId, input, output);
                             else if (_config.Model == 1)
-                                cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                            EnqueueSendText(cmd);
-                            //SendText(cmd);
+                                cmd = string.Format("{0}{1}ACI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
+                            //EnqueueSendText(cmd);
+                            SendText(cmd);
                         }
                         break;
                     }
                 case eRoutingSignalType.Audio:
                     {
-                        // TODO [X] Add routing command
                         // Example command *255ACI01O08! = Connect Audio Input 1 to Output 8
                         if(_config.Model == 0)
-                            cmd = string.Format("{0}{1}ACI{2}O{3}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
+                            cmd = string.Format("{0}{1}ACI{2}O{3}", StartChar, _config.DeviceId, input, output);
                         else if (_config.Model == 1)
-                            cmd = string.Format("{0}{1}ACI{2:D2}O{3:D2}{4}", StartChar, _config.DeviceId, input, output, CommsDelimiter);
-                        EnqueueSendText(cmd);
-                        //SendText(cmd);
+                            cmd = string.Format("{0}{1}ACI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
+                        //EnqueueSendText(cmd);
+                        SendText(cmd);
                         break;
                     }
             }
         }
-        #endregion
+	    #endregion
 
         #region Misc Methods
         /// <summary>

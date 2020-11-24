@@ -68,7 +68,7 @@ namespace PureLinkPlugin
             new JoinMetadata
             {
                 Description = "Connects the socket connection",
-                JoinCapabilities = eJoinCapabilities.FromSIMPL,
+                JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Digital
             });
 

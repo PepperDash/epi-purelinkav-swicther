@@ -1,0 +1,218 @@
+0 ms: [User Stimulus] : User set TCP/IP.Connect.Btn to Press
+16 ms: TCP/IP.Connect.Btn -> 1
+16 ms: TCP/IP.Connect.SR -> 1
+63 ms: [Console Data] : CP3>
+16 ms: TCP/IP.Connect.Status.Fb -> 1d
+32 ms: TCP/IP.Connect.Status.Fb -> 2d
+78 ms: [User Stimulus] : User set TCP/IP.Connect.Btn to Release
+32 ms: TCP/IP.Connect.Fb -> 1
+32 ms: TCP/IP.RX -> Media Axis TELNET V1.00 \x0D\x0A
+94 ms: TCP/IP.Connect.Btn -> 0
+00:00:59.969: TCP/IP.RX -> *255#O002C10!\x0D
+00:01:01.000: TCP/IP.RX -> *255#O002C11!\x0D
+00:01:04.063: TCP/IP.RX -> *255#O002C10!\x0D
+00:01:05.078: TCP/IP.RX -> *255#O002C11!\x0D
+00:05:43.985: TCP/IP.RX -> *255#O002C10!\x0D
+00:05:45.000: TCP/IP.RX -> *255#O002C11!\x0D
+00:05:48.078: TCP/IP.RX -> *255#O002C10!\x0D
+00:05:49.078: TCP/IP.RX -> *255#O002C11!\x0D
+00:07:35.157: TCP/IP.RX -> *255#O002C10!\x0D
+00:07:37.203: TCP/IP.RX -> *255#O002C11!\x0D
+00:07:40.703: TCP/IP.RX -> *255#O002C10!\x0D
+00:07:41.797: TCP/IP.RX -> *255#O002C11!\x0D
+00:20:59.938: [User Stimulus] : User set TCP/IP.Check.Audio.Status.All.IO.N to Press
+00:20:59.953: TCP/IP.Check.Audio.Status.All.IO.N -> 1
+00:20:59.953: TCP/IP.TX -> *255A?ALLIO!\x0D\x0A --Nope
+00:21:00.000: [User Stimulus] : User set TCP/IP.Check.Audio.Status.All.IO.N to Release
+00:21:00.016: TCP/IP.Check.Audio.Status.All.IO.N -> 0
+00:21:00.016: TCP/IP.RX -> Command Code Error!\x0D
+00:21:00.016: TCP/IP.Command.Code.Error.SIO -> 1
+00:21:00.016: TCP/IP.Command.Code.Error.SIO -> 0
+00:21:22.688: [User Stimulus] : User set TCP/IP.TX to *255A?ALLIO!\x0D\x0A
+00:21:22.703: TCP/IP.TX -> *255A?ALLIO!\x0D\x0A
+00:21:22.719: TCP/IP.RX -> Command Code Error!\x0D
+00:21:22.719: TCP/IP.Command.Code.Error.SIO -> 1
+00:21:22.719: TCP/IP.Command.Code.Error.SIO -> 0
+00:21:31.578: [User Stimulus] : User set TCP/IP.TX to *255?ALLIO!\x0D\x0A
+00:21:31.610: TCP/IP.TX -> *255?ALLIO!\x0D\x0A
+00:21:31.610: TCP/IP.RX -> Command Code Error!\x0D
+00:21:31.610: TCP/IP.Command.Code.Error.SIO -> 1
+00:21:31.610: TCP/IP.Command.Code.Error.SIO -> 0
+00:21:53.938: TCP/IP.RX -> *255#O002C10!\x0D
+00:21:54.953: TCP/IP.RX -> *255#O002C11!\x0D
+00:21:57.000: TCP/IP.RX -> *255#O002C10!\x0D
+00:21:59.360: TCP/IP.RX -> *255#O002C11!\x0D
+00:22:11.828: [User Stimulus] : User set TCP/IP.Disconnect.Video.All.IO.Y to Press
+00:22:11.844: TCP/IP.Disconnect.Video.All.IO.Y -> 1
+00:22:11.844: TCP/IP.TX -> *255VDALLIO!\x0D\x0A
+00:22:11.891: [User Stimulus] : User set TCP/IP.Disconnect.Video.All.IO.Y to Release
+00:22:11.907: TCP/IP.Disconnect.Video.All.IO.Y -> 0
+00:22:11.922: TCP/IP.RX -> *255sVDI000O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:22:35.953: TCP/IP.RX -> *255#O002C10!\x0D
+00:22:36.985: TCP/IP.RX -> *255#O002C11!\x0D
+00:22:40.032: TCP/IP.RX -> *255#O002C10!\x0D
+00:22:41.063: TCP/IP.RX -> *255#O002C11!\x0D
+00:23:18.969: TCP/IP.RX -> *255#O002C10!\x0D
+00:23:19.985: TCP/IP.RX -> *255#O002C11!\x0D
+00:23:25.469: TCP/IP.RX -> *255#O002C10!\x0D
+00:23:26.797: TCP/IP.RX -> *255#O002C11!\x0D
+00:31:33.235: [User Stimulus] : User set TCPIP.Check.Input01.Info.Y to Press
+00:31:33.250: [User Stimulus] : User set TCPIP.Check.Input01.Info.Y to Release
+00:31:33.250: TCPIP.Check.Input01.Info.Y -> 1
+00:31:33.250: TCP/IP.TX -> *255IFI001!\x0D\x0A
+00:31:33.266: TCPIP.Check.Input01.Info.Y -> 0
+00:31:33.344: TCP/IP.RX -> *255IFST-> Input : 001\x0D-> Slot Type : 4K HDMI Input Slot\x0D-> Slot Firmware Ver. : 1.10\x0D-> Receiver Status : Check Ok\x0D-> Port EDID : 3840x2160 @60[SNY], HDR, Bitstream\x0D-> Input Video Res. : No Signal\x0D-> Input Video Mode : -\x0D-> Input Dynamic Range : -\x0D-
+00:31:33.360: TCP/IP.RX -> > Input Audio : -\x0D!\x0D
+00:31:56.016: [User Stimulus] : User set TCP/IP.TX to *255IFI001-020!\x0D\x0A
+00:31:56.032: TCP/IP.TX -> *255IFI001-020!\x0D\x0A
+00:31:56.141: TCP/IP.RX -> *255IFST-> Input : 001\x0D-> Slot Type : 4K HDMI Input Slot\x0D-> Slot Firmware Ver. : 1.10\x0D-> Receiver Status : Check Ok\x0D-> Port EDID : 3840x2160 @60[SNY], HDR, Bitstream\x0D-> Input Video Res. : No Signal\x0D-> Input Video Mode : -\x0D-> Input Dynamic Range : -\x0D-
+00:31:56.141: TCP/IP.RX -> > Input Audio : -\x0D!\x0D
+00:33:16.750: [User Stimulus] : User set TCP/IP.Check.Routers.ID.Y to Press
+00:33:16.766: TCP/IP.Check.Routers.ID.Y -> 1
+00:33:16.766: TCP/IP.TX -> *999I000!\x0D\x0A
+00:33:16.766: TCP/IP.RX -> Command Code Error!\x0D
+00:33:16.766: TCP/IP.Command.Code.Error.SIO -> 1
+00:33:16.782: TCP/IP.Command.Code.Error.SIO -> 0
+00:33:16.891: [User Stimulus] : User set TCP/IP.Check.Routers.ID.Y to Release
+00:33:16.891: TCP/IP.Check.Routers.ID.Y -> 0
+00:34:02.047: [User Stimulus] : User set TCP/IP.TX to *999H000!\x0D\x0A
+00:34:02.078: TCP/IP.TX -> *999H000!\x0D\x0A
+00:34:02.094: TCP/IP.RX -> *255sH000!\x0D
+00:35:18.250: [User Stimulus] : User set TCP/IP.Check.Firmware.Version.Y to Press
+00:35:18.282: TCP/IP.Check.Firmware.Version.Y -> 1
+00:35:18.282: TCP/IP.TX -> *999?version!\x0D\x0A
+00:35:18.297: TCP/IP.RX -> *255s?VERSION:MAX-020-V1.12!\x0D
+00:35:18.328: [User Stimulus] : User set TCP/IP.Check.Firmware.Version.Y to Release
+00:35:18.344: TCP/IP.Check.Firmware.Version.Y -> 0
+00:35:55.422: TCP/IP.RX -> *255#O002C10!\x0D
+00:35:57.797: TCP/IP.RX -> *255#O002C11!\x0D
+00:36:00.891: TCP/IP.RX -> *255#O002C10!\x0D
+00:36:01.907: TCP/IP.RX -> *255#O002C11!\x0D
+00:37:00.047: TCP/IP.RX -> *255#O002C10!\x0D
+00:37:01.047: TCP/IP.RX -> *255#O002C11!\x0D
+00:37:35.016: TCP/IP.RX -> *255#O002C10!\x0D
+00:37:37.078: TCP/IP.RX -> *255#O002C11!\x0D
+00:37:40.641: TCP/IP.RX -> *255#O002C10!\x0D
+00:37:41.797: TCP/IP.RX -> *255#O002C11!\x0D
+00:37:52.157: [User Stimulus] : User set TCP/IP.TX to *255A?ALLIO!\n
+00:37:52.172: TCP/IP.TX -> *255A?ALLIO!\x0D\x0A
+00:37:52.219: TCP/IP.RX -> Command Code Error!\x0D
+00:37:52.219: TCP/IP.Command.Code.Error.SIO -> 1
+00:37:52.219: TCP/IP.Command.Code.Error.SIO -> 0
+00:38:18.032: [User Stimulus] : User set TCP/IP.TX to *255V?ALLIO!\n
+00:38:18.047: TCP/IP.TX -> *255V?ALLIO!\x0D\x0A
+00:38:18.063: TCP/IP.RX -> Command Code Error!\x0D
+00:38:18.063: TCP/IP.Command.Code.Error.SIO -> 1
+00:38:18.063: TCP/IP.Command.Code.Error.SIO -> 0
+00:38:24.750: [User Stimulus] : User set TCP/IP.TX to *255?ALLIO!\n
+00:38:24.766: TCP/IP.TX -> *255?ALLIO!\x0D\x0A
+00:38:24.813: TCP/IP.RX -> Command Code Error!\x0D
+00:38:24.813: TCP/IP.Command.Code.Error.SIO -> 1
+00:38:24.813: TCP/IP.Command.Code.Error.SIO -> 0
+00:38:30.485: [User Stimulus] : User set TCP/IP.TX to *255VI?ALLIO!\n
+00:38:30.516: TCP/IP.TX -> *255VI?ALLIO!\x0D\x0A
+00:38:30.547: TCP/IP.RX -> Command Code Error!\x0D
+00:38:30.547: TCP/IP.Command.Code.Error.SIO -> 1
+00:38:30.547: TCP/IP.Command.Code.Error.SIO -> 0
+00:38:36.969: [User Stimulus] : User set TCP/IP.TX to *255I?ALLIO!\n
+00:38:36.985: TCP/IP.TX -> *255I?ALLIO!\x0D\x0A
+00:38:37.000: TCP/IP.RX -> Command Code Error!\x0D
+00:38:37.000: TCP/IP.Command.Code.Error.SIO -> 1
+00:38:37.000: TCP/IP.Command.Code.Error.SIO -> 0
+00:38:51.750: [User Stimulus] : User set TCP/IP.TX to *255?ALLIO!\n
+00:38:51.766: TCP/IP.TX -> *255?ALLIO!\x0D\x0A
+00:38:51.813: TCP/IP.RX -> Command Code Error!\x0D
+00:38:51.813: TCP/IP.Command.Code.Error.SIO -> 1
+00:38:51.813: TCP/IP.Command.Code.Error.SIO -> 0
+00:41:10.203: [User Stimulus] : User set TCP/IP.TX to *255?SID!\n
+00:41:10.219: TCP/IP.TX -> *255?SID!\x0D\x0A
+00:41:10.235: TCP/IP.RX -> *255s?SID255!\x0D
+00:41:21.282: [User Stimulus] : User set TCP/IP.TX to *999?SID!\n
+00:41:21.313: TCP/IP.TX -> *999?SID!\x0D\x0A
+00:41:21.313: TCP/IP.RX -> *255s?SID255!\x0D
+00:42:49.813: TCP/IP.RX -> *255#O001C10!\x0D
+00:42:50.875: TCP/IP.RX -> *255#O001C11!\x0D
+00:42:50.875: TCP/IP.RX -> *255#O002C10!\x0D
+00:42:51.891: TCP/IP.RX -> *255#O002C11!\x0D
+00:42:54.985: TCP/IP.RX -> *255#O002C10!\x0D
+00:42:56.000: TCP/IP.RX -> *255#O002C11!\x0D
+00:43:29.172: [User Stimulus] : User set TCP/IP.TX to *255SNKA01!\n
+00:43:29.188: TCP/IP.TX -> *255SNKA01!\x0D\x0A
+00:43:29.203: TCP/IP.RX -> *255sSNKA01!\x0D
+00:43:37.203: TCP/IP.Connect.Status.Fb -> 4d
+00:43:37.219: TCP/IP.Connect.Fb -> 0
+00:43:37.219: TCP/IP.Connect.Status.Fb -> 1d
+00:43:37.219: TCP/IP.Connect.Status.Fb -> 2d
+00:43:37.219: TCP/IP.Connect.Fb -> 1
+00:43:37.235: TCP/IP.RX -> Media Axis TELNET V1.00 \x0D\x0A
+00:43:45.235: TCP/IP.Connect.Status.Fb -> 4d
+00:43:45.235: TCP/IP.Connect.Fb -> 0
+00:43:45.235: TCP/IP.Connect.Status.Fb -> 1d
+00:43:45.235: TCP/IP.Connect.Status.Fb -> 2d
+00:43:45.250: TCP/IP.Connect.Fb -> 1
+00:43:45.250: TCP/IP.RX -> Media Axis TELNET V1.00 \x0D\x0A
+00:43:53.250: TCP/IP.Connect.Status.Fb -> 4d
+00:43:53.250: TCP/IP.Connect.Fb -> 0
+00:43:53.250: TCP/IP.Connect.Status.Fb -> 1d
+00:43:53.266: TCP/IP.Connect.Status.Fb -> 2d
+00:43:53.266: TCP/IP.Connect.Fb -> 1
+00:43:53.266: TCP/IP.RX -> Media Axis TELNET V1.00 \x0D\x0A
+00:44:01.266: TCP/IP.Connect.Status.Fb -> 4d
+00:44:01.282: TCP/IP.Connect.Fb -> 0
+00:44:01.282: TCP/IP.Connect.Status.Fb -> 1d
+00:44:01.282: TCP/IP.Connect.Status.Fb -> 2d
+00:44:01.282: TCP/IP.Connect.Fb -> 1
+00:44:01.282: TCP/IP.RX -> Media Axis TELNET V1.00 \x0D\x0A
+00:44:02.641: [User Stimulus] : User set TCP/IP.TX to *255SNKA00!\n
+00:44:02.657: TCP/IP.TX -> *255SNKA00!\x0D\x0A
+00:44:02.657: TCP/IP.RX -> *255sSNKA00!\x0D
+00:51:07.891: [User Stimulus] : User set TCP/IP.TX to *255DALLIO!\n
+00:51:07.907: TCP/IP.TX -> *255DALLIO!\x0D\x0A
+00:51:07.969: TCP/IP.RX -> *255sDI000O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:51:57.860: TCP/IP.RX -> *255#O002C10!\x0D
+00:51:58.891: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:01.938: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:02.969: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:12.407: [User Stimulus] : User set TCP/IP.TX to *255?AALLIO!\n
+00:52:12.422: TCP/IP.TX -> *255?AALLIO!\x0D\x0A
+00:52:12.453: TCP/IP.RX -> *255s?AI001O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:52:14.188: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:16.219: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:19.594: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:20.688: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:34.985: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:37.016: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:40.266: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:42.735: TCP/IP.RX -> *255#O002C11!\x0D
+00:52:44.594: [User Stimulus] : User set TCP/IP.TX to *255?VALLIO!\n
+00:52:44.610: TCP/IP.TX -> *255?VALLIO!\x0D\x0A
+00:52:44.657: TCP/IP.RX -> *255s?VI000O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:52:44.782: TCP/IP.RX -> *255#O002C10!\x0D
+00:52:46.032: TCP/IP.RX -> *255#O002C11!\x0D
+00:53:05.141: [User Stimulus] : User set TCP/IP.TX to *255?VALLIO!\n
+00:53:05.172: TCP/IP.TX -> *255?VALLIO!\x0D\x0A
+00:53:05.203: TCP/IP.RX -> *255s?VI000O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:53:21.735: TCP/IP.RX -> *255#O001C10!\x0D
+00:53:22.907: TCP/IP.RX -> *255#O001C11!\x0D
+00:53:22.907: TCP/IP.RX -> *255#O002C10!\x0D
+00:53:23.922: TCP/IP.RX -> *255#O002C11!\x0D
+00:53:28.000: TCP/IP.RX -> *255#O002C10!\x0D
+00:53:29.000: TCP/IP.RX -> *255#O002C11!\x0D
+00:53:47.016: [User Stimulus] : User set TCP/IP.TX to *255?AALLIO!\n
+00:53:47.047: TCP/IP.TX -> *255?AALLIO!\x0D\x0A
+00:53:47.078: TCP/IP.RX -> *255s?AI001O001,I000O002,I000O003,I000O004,I000O005,I000O006,I000O007,I000O008,I000O009,I000O010,I000O011,I000O012,I000O013,I000O014,I000O015,I000O016,I000O017,I000O018,I000O019,I000O020!\x0D
+00:59:18.125: [User Stimulus] : User set TCPIP.Check.Input01.Info.Y to Press
+00:59:18.141: TCPIP.Check.Input01.Info.Y -> 1
+00:59:18.141: TCP/IP.TX -> *255IFI001!\x0D\x0A
+00:59:18.203: [User Stimulus] : User set TCPIP.Check.Input01.Info.Y to Release
+00:59:18.219: TCPIP.Check.Input01.Info.Y -> 0
+00:59:18.297: TCP/IP.RX -> *255IFST-> Input : 001\x0D-> Slot Type : 4K HDMI Input Slot\x0D-> Slot Firmware Ver. : 1.10\x0D-> Receiver Status : Check Ok\x0D-> Port EDID : 3840x2160 @60[SNY], HDR, Bitstream\x0D-> Input Video Res. : No Signal\x0D-> Input Video Mode : -\x0D-> Input Dynamic Range : -\x0D-
+00:59:18.297: TCP/IP.RX -> > Input Audio : -\x0D!\x0D
+00:59:34.875: [User Stimulus] : User set TCP/IP.TX to *255IFI001-020!\x0D\x0A
+00:59:34.891: TCP/IP.TX -> *255IFI001-020!\x0D\x0A
+00:59:35.063: TCP/IP.RX -> *255IFST-> Input : 001\x0D-> Slot Type : 4K HDMI Input Slot\x0D-> Slot Firmware Ver. : 1.10\x0D-> Receiver Status : Check Ok\x0D-> Port EDID : 3840x2160 @60[SNY], HDR, Bitstream\x0D-> Input Video Res. : No Signal\x0D-> Input Video Mode : -\x0D-> Input Dynamic Range : -\x0D-
+00:59:35.063: TCP/IP.RX -> > Input Audio : -\x0D!\x0D
+00:59:44.094: [User Stimulus] : User set TCP/IP.TX to *255IFI001-002!\x0D\x0A
+00:59:44.110: TCP/IP.TX -> *255IFI001-002!\x0D\x0A
+00:59:44.219: TCP/IP.RX -> *255IFST-> Input : 001\x0D-> Slot Type : 4K HDMI Input Slot\x0D-> Slot Firmware Ver. : 1.10\x0D-> Receiver Status : Check Ok\x0D-> Port EDID : 3840x2160 @60[SNY], HDR, Bitstream\x0D-> Input Video Res. : No Signal\x0D-> Input Video Mode : -\x0D-> Input Dynamic Range : -\x0D-
+00:59:44.235: TCP/IP.RX -> > Input Audio : -\x0D!\x0D
