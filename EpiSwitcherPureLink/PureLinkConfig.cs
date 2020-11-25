@@ -128,7 +128,7 @@ namespace PureLinkPlugin
         /// This is an exmaple device plugin property.  This should be modified or deleted as needed for the plugin being built.
         /// </remarks>
         /// <value>
-        /// PollTimeMs property gets/sets the value as a long
+        /// PollTimeMs property gets/sets the value as a string
         /// </value>
         /// <example>
         /// <code>
@@ -139,6 +139,24 @@ namespace PureLinkPlugin
         /// </example>
         [JsonProperty("pollString")]
         public string PollString { get; set; }
+
+        /// <summary>
+        /// Plugin bridge request to poll outputs for current video
+        /// </summary>
+        /// <value>
+        /// PollVideo property gets/sets the value as a bool
+        /// </value>
+        [JsonProperty("pollvideo")]
+        public bool PollVideo { get; set; }
+
+        /// <summary>
+        /// Plugin bridge request to poll outputs for current audio
+        /// </summary>
+        /// <value>
+        /// PollAudio property gets/sets the value as a bool
+        /// </value>
+        [JsonProperty("pollaudio")]
+        public bool PollAudio { get; set; }
 
 		/// <summary>
 		/// Serializes the warning timeout value
