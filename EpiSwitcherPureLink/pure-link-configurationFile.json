@@ -46,7 +46,6 @@
                     "errorTimeoutMs": 180000,
                     "deviceId": 255,
                     "model": 1,
-					"audioFollowsVideo": false,
 					"inputs": {
 						"1":{
 							"name": "Input 1"

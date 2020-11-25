@@ -208,11 +208,11 @@ namespace PureLinkPlugin
         [JsonProperty("model")]
         public uint Model { get; set; }
 
-        /// <summary>
-        /// Plugin property for audio follows video
-        /// </summary>
-        [JsonProperty("audioFollowsVideo")]
-        public bool AudioFollowsVideo { get; set; }
+        ///// <summary>
+        ///// Plugin property for audio follows video
+        ///// </summary>
+        //[JsonProperty("audioFollowsVideo")]
+        //public bool EnableAudioBreakawayFeedback { get; set; }
 
         /// <summary>
         /// Plugin property for source inputs

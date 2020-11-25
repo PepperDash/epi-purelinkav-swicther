@@ -11,13 +11,13 @@ namespace PureLinkPlugin
         #region Digital
 
         /// <summary>
-        /// Plugin join map online
+        /// Plugin request for video route
         /// </summary>
         /// <remarks>
-        /// Reports the plugin join map online state to SiMPL as a boolean value
+        /// Typically used to trigger video routes and prevent video route on initial SIMPL bridge connect.
         /// </remarks>
-        [JoinName("IsOnline")]
-        public JoinDataComplete IsOnline = new JoinDataComplete(
+        [JoinName("VideoEnter")]
+        public JoinDataComplete VideoEnter = new JoinDataComplete(
             new JoinData
             {
                 JoinNumber = 1,
@@ -25,8 +25,45 @@ namespace PureLinkPlugin
             },
             new JoinMetadata
             {
-                Description = "Is Online",
-                JoinCapabilities = eJoinCapabilities.ToSIMPL,
+                Description = "Requests video route",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
+                JoinType = eJoinType.Digital
+            });
+
+        /// <summary>
+        /// Plugin request for audio route
+        /// </summary>
+        /// <remarks>
+        /// Typically used to trigger audio routes and prevent audio route on initial SIMPL bridge connect.
+        /// </remarks>
+        [JoinName("VideoEnter")]
+        public JoinDataComplete AudioEnter = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 2,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "Requests audio route",
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
+                JoinType = eJoinType.Digital
+            });
+
+        /// <summary>
+        /// Triggers and provides indication of audio follows video
+        /// </summary>
+        [JoinName("EnableAudioBreakawayFeedback")]
+        public JoinDataComplete EnableAudioBreakaway = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 3,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "Enable Audio Breakaway",
+                JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
                 JoinType = eJoinType.Digital
             });
 
@@ -40,7 +77,7 @@ namespace PureLinkPlugin
         public JoinDataComplete Disconnect = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 1,
+                JoinNumber = 12,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -60,33 +97,13 @@ namespace PureLinkPlugin
         public JoinDataComplete Connect = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 2,
+                JoinNumber = 11,
                 JoinSpan = 1
             },
             new JoinMetadata
             {
                 Description = "Connects the socket connection",
                 JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
-                JoinType = eJoinType.Digital
-            });
-
-        /// <summary>
-        /// Plugin Get IP Info
-        /// </summary>
-        /// <remarks>
-        /// When triggered returns configured IP information
-        /// </remarks>
-        [JoinName("GetIpInfo")]
-        public JoinDataComplete GetIpInfo = new JoinDataComplete(
-            new JoinData
-            {
-                JoinNumber = 3,
-                JoinSpan = 1
-            },
-            new JoinMetadata
-            {
-                Description = "When triggered returns configured IP information",
-                JoinCapabilities = eJoinCapabilities.FromSIMPL,
                 JoinType = eJoinType.Digital
             });
 
@@ -120,7 +137,7 @@ namespace PureLinkPlugin
         public JoinDataComplete PollVideo = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 8,
+                JoinNumber = 7,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -140,7 +157,7 @@ namespace PureLinkPlugin
         public JoinDataComplete PollAudio = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 7,
+                JoinNumber = 8,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -160,7 +177,7 @@ namespace PureLinkPlugin
         public JoinDataComplete ClearVideoRoutes = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 11,
+                JoinNumber = 15,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -180,7 +197,7 @@ namespace PureLinkPlugin
         public JoinDataComplete ClearAudioRoutes = new JoinDataComplete(
             new JoinData
             {
-                JoinNumber = 12,
+                JoinNumber = 16,
                 JoinSpan = 1
             },
             new JoinMetadata
@@ -198,7 +215,7 @@ namespace PureLinkPlugin
             new JoinData
             {
                 JoinNumber = 101,
-                JoinSpan = 72
+                JoinSpan = PureLinkDevice.MaxIo
             },
             new JoinMetadata
             {
@@ -206,24 +223,6 @@ namespace PureLinkPlugin
                 JoinCapabilities = eJoinCapabilities.ToSIMPL,
                 JoinType = eJoinType.Digital
             });
-
-        /// <summary>
-        /// Triggers and provides indication of audio follows video
-        /// </summary>
-        [JoinName("AudioFollowsVideo")]
-        public JoinDataComplete AudioFollowsVideo = new JoinDataComplete(
-            new JoinData
-            {
-                JoinNumber = 10,
-                JoinSpan = 1
-            },
-            new JoinMetadata
-            {
-                Description = "Audio Follows Video",
-                JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
-                JoinType = eJoinType.Digital
-            });
-
         #endregion
 
         #region Analog
