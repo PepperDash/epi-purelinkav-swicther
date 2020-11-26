@@ -36,7 +36,7 @@ namespace PureLinkPlugin
         /// <remarks>
         /// Typically used to trigger audio routes and prevent audio route on initial SIMPL bridge connect.
         /// </remarks>
-        [JoinName("VideoEnter")]
+        [JoinName("AudioEnter")]
         public JoinDataComplete AudioEnter = new JoinDataComplete(
             new JoinData
             {
@@ -123,7 +123,7 @@ namespace PureLinkPlugin
             new JoinMetadata
             {
                 Description = "Poll",
-                JoinCapabilities = eJoinCapabilities.ToFromSIMPL,
+                JoinCapabilities = eJoinCapabilities.FromSIMPL,
                 JoinType = eJoinType.Digital
             });
 

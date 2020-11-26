@@ -6,8 +6,8 @@
             {
                 "key": "processor",
                 "uid": 0,
-                "type": "rmc3",
-                "name": "RMC3",
+                "type": "pro3",
+                "name": "PRO3",
                 "group": "processor",
                 "supportedConfigModes": [
                     "compliance",
@@ -49,36 +49,126 @@
 					"inputs": {
 						"1":{
 							"name": "Input 1"
-						},
-						"2":{
+                        },
+                        "2":{
 							"name": "Input 2"
-						},
-						"3":{
+                        },
+                        "3":{
 							"name": "Input 3"
-						},
-						"4":{
+                        },
+                        "4":{
 							"name": "Input 4"
                         },
                         "5":{
 							"name": "Input 5"
-						}
+                        },
+                        "6":{
+							"name": "Input 6"
+                        },
+                        "7":{
+							"name": "Input 7"
+                        },
+                        "8":{
+							"name": "Input 8"
+                        },
+                        "9":{
+							"name": "Input 9"
+                        },
+                        "10":{
+							"name": "Input 10"
+                        },
+                        "11":{
+							"name": "Input 11"
+                        },
+                        "12":{
+							"name": "Input 12"
+                        },
+                        "13":{
+							"name": "Input 13"
+                        },
+                        "14":{
+							"name": "Input 14"
+                        },
+                        "15":{
+							"name": "Input 15"
+                        },
+                        "16":{
+							"name": "Input 16"
+                        },
+                        "17":{
+							"name": "Input 17"
+                        },
+                        "18":{
+							"name": "Input 18"
+                        },
+                        "19":{
+							"name": "Input 19"
+                        },
+                        "20":{
+							"name": "Input 20"
+						}						
 					},
 					"outputs":{
 						"1":{
 							"name": "Output 1"
-						},
-						"2":{
+                        },
+                        "2":{
 							"name": "Output 2"
-						},
-						"3":{
+                        },
+                        "3":{
 							"name": "Output 3"
-						},
-						"4":{
+                        },
+                        "4":{
 							"name": "Output 4"
                         },
                         "5":{
 							"name": "Output 5"
-						}
+                        },
+                        "6":{
+							"name": "Output 6"
+                        },
+                        "7":{
+							"name": "Output 7"
+                        },
+                        "8":{
+							"name": "Output 8"
+                        },
+                        "9":{
+							"name": "Output 9"
+                        },
+                        "10":{
+							"name": "Output 10"
+                        },
+                        "11":{
+							"name": "Output 11"
+                        },
+                        "12":{
+							"name": "Output 12"
+                        },
+                        "13":{
+							"name": "Output 13"
+                        },
+                        "14":{
+							"name": "Output 14"
+                        },
+                        "15":{
+							"name": "Output 15"
+                        },
+                        "16":{
+							"name": "Output 16"
+                        },
+                        "17":{
+							"name": "Output 17"
+                        },
+                        "18":{
+							"name": "Output 18"
+                        },
+                        "19":{
+							"name": "Output 19"
+                        },
+                        "20":{
+							"name": "Output 20"
+						}	
 					}
 				}
 			},
@@ -110,7 +200,7 @@
             "comment": "",
             "lastModifiedDate": "2017-03-06T23:14:40.290Z",
             "lastUid": 2,
-            "processorType": "rmc3",
+            "processorType": "pro3",
             "requiredControlSofwareVersion": "",
             "systemType": "huddle"
         },
