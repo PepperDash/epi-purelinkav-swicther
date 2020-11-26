@@ -4,7 +4,7 @@ The Pure Link Plugin provides device control utilizing the configuration object 
 
 ## Disclaimer
 
-This was my first EPI which was built and tested on the bench with a Pure-Link Media Axis-20 (20x20) switcher using TCP/IP as the control method. This EPI was only designed for TCP/IP Crestron integration (RS-232/serial control not tested nor suggested). The EPI handles two forms of API calls using the configuration 'Model' object detailed below. See details below regarding development environment.
+This was my first EPI which was built and tested on the bench with a Pure-Link Media Axis-20 (20x20) switcher using TCP/IP as the control method. This EPI was only designed for TCP/IP Crestron integration (RS-232/serial control not tested nor suggested). The EPI handles two forms of API calls using the configuration 'Model' object detailed below. **The SIMPL Windows bridge analog video and audio request signals must use the value of '999' to trigger a route to clear as the value of 0 is not evaluated.** See details below regarding development environment.
 
 ## Installation
 
