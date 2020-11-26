@@ -248,9 +248,12 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 
 
 ## Development Environment 
-• Pure Link Media Axis MAX-20 (firmware: MAX-020-V1.12)
-• Crestron CP3 (firmware: 1.603.4242.36971 (Aug 13 2020))
-• Private LAN setup by consultant using 172.16.0.X subnet
+
+| Hardware                    | Firmware                                 | 
+|-----------------------------|------------------------------------------|
+| Pure Link Media Axis MAX-20 | Firmware: MAX-020-V1.12                  |
+| Crestron CP3                | Firmware: 1.603.4242.36971 (Aug 13 2020) |
+| Private LAN/172.16.0.X      | N/A                                      |
 
 | Software                 | Version        | 
 |--------------------------|----------------|
@@ -265,24 +268,24 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 
 ## Feature Wishlist
 
-• Outbound communication queue
-• Source sync detection
+• Outbound communication queue<br>
+• Source sync detection<br>
 
 ## Manufacturer Details
 
-• [PureLink Website](https://www.purelinkav.com/product-category/matrix-switchers/media-axis/)
-• Media Axis™ is the world’s first large-scale matrix switching and extension system supporting Ultra HD/4K60 4:4:4 via Native and IP architectures. With its dynamic, proprietary design features and technologies, Media Axis™ provides a truly adaptive solution that works where and how you need it.
-• The Media Axis Matrix Switcher supports the following digital interfaces:
-✓ HDMI v2.0b (w/scaling)
-✓ 12G-SDI (standard scaling)
-✓ CATx (HDBaseT) (w/scaling)
-✓ Fiber (w/scaling)
-✓ IP (10G)
-✓ Dante™/AES67 (IP audio)
+• [PureLink Website](https://www.purelinkav.com/product-category/matrix-switchers/media-axis/)<br>
+• Media Axis™ is the world’s first large-scale matrix switching and extension system supporting Ultra HD/4K60 4:4:4 via Native and IP architectures. With its dynamic, proprietary design features and technologies, Media Axis™ provides a truly adaptive solution that works where and how you need it.<br>
+• The Media Axis Matrix Switcher supports the following digital interfaces:<br>
+✓ HDMI v2.0b (w/scaling)<br>
+✓ 12G-SDI (standard scaling)<br>
+✓ CATx (HDBaseT) (w/scaling)<br>
+✓ Fiber (w/scaling)<br>
+✓ IP (10G)<br>
+✓ Dante™/AES67 (IP audio)<br>
 
-* Each Media Axis™ Matrix Switcher Chassis is custom-assembled from field-upgradeable Input/Output cards:
-• The MAX-20 can support a combination of up to (5) I/O cards
-• The MAX-36 can support a combination of up to (9) I/O cards
-• The MAX-72 can support a combination of up to (18) I/O cards
-• The MAX-144 can support a combination of up to (36) I/O cards
-• The MAX-216 can support a combination of up to (54) I/O cards
+• Each Media Axis™ Matrix Switcher Chassis is custom-assembled from field-upgradeable Input/Output cards:<br>
+✓ The MAX-20 can support a combination of up to (5) I/O cards<br>
+✓ The MAX-36 can support a combination of up to (9) I/O cards<br>
+✓ The MAX-72 can support a combination of up to (18) I/O cards<br>
+✓ The MAX-144 can support a combination of up to (36) I/O cards<br>
+✓ The MAX-216 can support a combination of up to (54) I/O cards<br>
