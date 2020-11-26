@@ -247,6 +247,13 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 |          | 2201-MAXIO | CurrentOutputAudio001-XXX Names         |
 
 
+## Model
+
+The Pure Link switcher has two forms of API calls for routes made based on the switcher model. Model PM-128X and PM-256X, input and output # uses three digit format, instead of two digits.
+Model analog value 0 = 2 character input & output. Example *255CI01O02<br>
+Model analog value 1 = 3 character input & output. Example *255CI001O002<br>
+
+
 ## Development Environment 
 
 | Hardware                    | Firmware                                 | 
