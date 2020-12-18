@@ -31,12 +31,6 @@ namespace PureLinkPlugin
 
         #region Constants
 
-        /// <summary>
-        /// "*999?version!" - Check firmware version
-        /// "*999I000!" - Check ruoters ID
-        /// "“*255sI Router ID 255" - Response from router ID check
-        /// </summary>
-
         private const string PollString = "*999?version";
         private const string PollVideo = ("*999?vallio");
         private const string PollAudio = ("*999?aallio");
@@ -54,7 +48,7 @@ namespace PureLinkPlugin
         private CrestronQueue<string> _parserQueue;
         private CCriticalSection _parserLock;
 
-        private readonly PureLinkCmdProcessor _cmdProcessor = new PureLinkCmdProcessor();
+        //private readonly PureLinkCmdProcessor _cmdProcessor = new PureLinkCmdProcessor();
 
         #endregion Constants
 
@@ -224,6 +218,10 @@ namespace PureLinkPlugin
             Debug.Console(0, this, "Constructing new {0} instance", name);
 
             // TODO [X] Update the constructor as needed for the plugin device being developed
+            _commsQueueLock = new CCriticalSection();
+            _commsQueue = new CrestronQueue<string>();
+            _parserLock = new CCriticalSection();
+            _parserQueue = new CrestronQueue<string>();
 
             _config = config;
             if (string.IsNullOrEmpty(_config.DeviceId))
@@ -430,46 +428,44 @@ namespace PureLinkPlugin
                 return;
             }
 
-            try
+            Debug.Console(1, this, "handleLineReceived args.Text: {0}", args.Text); //Show me what we received
+            EnqueueParseData(args.Text); 
+        }
+
+        /// <summary>
+        /// Parse incoming data
+        /// </summary>
+        /// <param name="data"></param>
+        public void ParseData(string data)
+        {
+            if (string.IsNullOrEmpty(data))
             {
-                var data = args.Text.Trim(); // Remove leading/trailing white-space characters
-                if (string.IsNullOrEmpty(data))
-                {
-                    Debug.Console(2, this, "HandleLineReceived: data is null or empty");
-                    return;
-                }
-
-                if (data.ToLower().Contains("Command Code Error!"))
-                {
-                    Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived: Command Code Error");
-                    return;
-                }
-
-                if (data.ToLower().Contains("Router ID Error!"))
-                {
-                    Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived: Router ID Error");
-                    return;
-                }
-
-                if (data.ToLower().Contains("sc"))
-                {
-                    Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    _cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.AudioVideo));
-                }
-                else if (data.ToLower().Contains("sv") || data.ToLower().Contains("s?v"))
-                {
-                    Debug.Console(2, this, "Received Video Switch FB");
-                    _cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.Video));
-                }
-                else if (data.ToLower().Contains("sa") || data.ToLower().Contains("s?a"))
-                {
-                    Debug.Console(2, this, "Received Audio Switch FB");
-                    _cmdProcessor.EnqueueTask(() => ParseIoResponse(data, RouteType.Audio));
-                }
+                Debug.Console(2, this, "HandleLineReceived: data is null or empty");
+                return;
             }
-            catch (Exception ex)
+
+            data.Trim().ToLower(); // Remove leading/trailing white-space characters             
+
+            if (data.Contains("error"))
             {
-                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived Exception: {0}", ex.InnerException.Message);
+                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived: {0}", data);
+                return;
+            }
+
+            if (data.Contains("sc"))
+            {
+                Debug.Console(2, this, "Received Audio-Video Switch FB");                
+                ParseIoResponse(data, RouteType.AudioVideo);
+            }
+            else if (data.Contains("sv") || data.ToLower().Contains("s?v"))
+            {
+                Debug.Console(2, this, "Received Video Switch FB");
+                ParseIoResponse(data, RouteType.Video);
+            }
+            else if (data.Contains("sa") || data.ToLower().Contains("s?a"))
+            {
+                Debug.Console(2, this, "Received Audio Switch FB");
+                ParseIoResponse(data, RouteType.Audio);
             }
         }
 
@@ -497,7 +493,8 @@ namespace PureLinkPlugin
         public void Poll()
         {
             // TODO [X] Update Poll method as needed for the plugin being developed
-            SendText(_config.PollString);
+            //SendText(_config.PollString);
+            EnqueueSendText(_config.PollString);
         }
 
         #endregion IBasicCommunication Properties and Constructor
@@ -733,7 +730,8 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollVideo()
         {
-            SendText(PollVideo);
+            //SendText(PollVideo);
+            EnqueueSendText(PollVideo);
         }
 
         /// <summary>
@@ -741,7 +739,8 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollAudio()
         {
-            SendText(PollAudio);
+            //SendText(PollAudio);
+            EnqueueSendText(PollAudio);
         }
 
         /// <summary>
@@ -750,7 +749,8 @@ namespace PureLinkPlugin
         public void SetClearVideoRoutes()
         {
 
-            SendText(ClearVideoRoutes);
+            //SendText(ClearVideoRoutes);
+            EnqueueSendText(ClearVideoRoutes);
         }
 
         /// <summary>
@@ -759,7 +759,8 @@ namespace PureLinkPlugin
         public void SetClearAudioRoutes()
         {
 
-            SendText(ClearAudioRoutes);
+            //SendText(ClearAudioRoutes);
+            EnqueueSendText(ClearAudioRoutes);
         }
 
         /// <summary>
@@ -896,7 +897,8 @@ namespace PureLinkPlugin
 
             _commsQueue.TryToEnqueue(cmd);
 
-            var lockState = _commsQueueLock.TryEnter();
+            var lockState = _commsQueueLock.TryEnter(); //lockState is asking if Dequeue is active or inuse or triggered
+                                                        //This prevents multiple queues in action
             if (lockState)
                 CrestronInvoke.BeginInvoke((o) => DequeueSendText());
         }
@@ -931,6 +933,50 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Plugin Enqueue data to parse
+        /// </summary>
+        /// <param name="cmd"></param>
+        public void EnqueueParseData(string cmd)
+        {
+            if (cmd == null)
+                return;
+
+            _parserQueue.TryToEnqueue(cmd);
+
+            var lockState = _parserLock.TryEnter();
+            if (lockState)
+                CrestronInvoke.BeginInvoke((o) => DequeueParseData());
+        }
+
+        /// <summary>
+        /// Plugin dequeue and call ParseData() method
+        /// </summary>
+        private void DequeueParseData()
+        {
+            try
+            {
+                while (true)
+                {                    
+                    var cmd = _parserQueue.Dequeue();
+                    if (!string.IsNullOrEmpty(cmd))
+                    {                        
+                        ParseData(cmd);
+                        //Thread.Sleep(200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, "DequeueParseData Exception: {0}", ex);
+            }
+            finally
+            {
+                if (_parserLock != null)
+                    _parserLock.Leave();
+            }
+        }
+
+        /// <summary>
         /// Executes switch
         /// </summary>
         /// <param name="input">Source number</param>
@@ -961,8 +1007,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}CI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Video:
@@ -976,8 +1022,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}VCI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Audio:
@@ -991,8 +1037,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}ACI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
             }
