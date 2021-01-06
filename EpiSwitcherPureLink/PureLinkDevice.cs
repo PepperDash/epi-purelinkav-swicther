@@ -25,7 +25,7 @@ namespace PureLinkPlugin
     /// </example>
     /// Notes: Delate is a signature for a method. 
 
-    public class PureLinkDevice : EssentialsBridgeableDevice
+    public class PureLinkDevice : EssentialsBridgeableDevice, IOnline, ICommunicationMonitor
     {
         private readonly PureLinkConfig _config; // Store the config locally
 
@@ -118,6 +118,22 @@ namespace PureLinkPlugin
         /// Reports connect feedback through the bridge
         /// </summary>
         public BoolFeedback ConnectFeedback { get; private set; }
+
+        /// <summary>
+        /// Implement IOnline
+        /// </summary>
+        public BoolFeedback IsOnline
+        {
+            get { return _commsMonitor.IsOnlineFeedback; }
+        }
+
+        /// <summary>
+        /// Implement ICommunicationMonitor
+        /// </summary>
+        public StatusMonitorBase CommunicationMonitor
+        {
+            get { return _commsMonitor; }
+        }
 
         /// <summary>
         /// Reports online feedback through the bridge
@@ -249,8 +265,10 @@ namespace PureLinkPlugin
             if (_config.ErrorTimeoutMs == 0)
                 _config.ErrorTimeoutMs = 300000;
 
+            var socket = _comms as ISocketStatus;
+
+            var result = (socket != null) ? (OnlineFeedback = new BoolFeedback(() => ConnectFb)) : (OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline));
             ConnectFeedback = new BoolFeedback(() => ConnectFb);
-            OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             EnableAudioBreakawayFeedback = new BoolFeedback(() => EnableAudioBreakaway);
             StatusFeedback = new IntFeedback(GetSocketStatus);
 
@@ -270,8 +288,7 @@ namespace PureLinkPlugin
             // The _commsMonitor.Status only changes based on the values placed in the Poll times
             // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
             _commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
-
-            var socket = _comms as ISocketStatus;
+            
             if (socket != null)
             {
                 // device comms is IP **ELSE** device comms is RS232
@@ -542,6 +559,7 @@ namespace PureLinkPlugin
             trilist.SetSigTrueAction(joinMap.EnableAudioBreakaway.JoinNumber, SetEnableAudioBreakaway);
 
             // X.LinkInputSig is feedback to SIMPL
+            OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);
             ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
             StatusFeedback.LinkInputSig(trilist.UShortInput[joinMap.Status.JoinNumber]);
             EnableAudioBreakawayFeedback.LinkInputSig(trilist.BooleanInput[joinMap.EnableAudioBreakaway.JoinNumber]);
