@@ -267,7 +267,9 @@ namespace PureLinkPlugin
 
             var socket = _comms as ISocketStatus;
 
-            var result = (socket != null) ? (OnlineFeedback = new BoolFeedback(() => ConnectFb)) : (OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline));
+            var result = (socket != null) ? ConnectFb : _commsMonitor.IsOnline;
+            OnlineFeedback = new BoolFeedback(() => result);
+
             ConnectFeedback = new BoolFeedback(() => ConnectFb);
             EnableAudioBreakawayFeedback = new BoolFeedback(() => EnableAudioBreakaway);
             StatusFeedback = new IntFeedback(GetSocketStatus);
@@ -786,6 +788,7 @@ namespace PureLinkPlugin
         /// </summary>
         private void UpdateFeedbacks()
         {
+            OnlineFeedback.FireUpdate();
             ConnectFeedback.FireUpdate();
             StatusFeedback.FireUpdate();
             EnableAudioBreakawayFeedback.FireUpdate();
