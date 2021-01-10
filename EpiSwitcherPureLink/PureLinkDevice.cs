@@ -682,7 +682,7 @@ namespace PureLinkPlugin
             #endregion links to bridge
         }
 
-#warning Code below should be refactored
+#warning Method SetVideoEnter() below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if video route should be called
         /// </summary>            
@@ -709,7 +709,7 @@ namespace PureLinkPlugin
             }
         }
 
-#warning Code below should be refactored
+#warning Method SetAudioEnter() below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if audio route should be called
         /// </summary>            
@@ -1063,6 +1063,24 @@ namespace PureLinkPlugin
                         break;
                     }
             }
+        }
+        #endregion
+
+        #region Interfaces
+        /// <summary>
+        /// IOnline Members
+        /// </summary>
+        BoolFeedback IOnline.IsOnline
+        {
+            get { return OnlineFeedback; }
+        }
+
+        /// <summary>
+        /// ICommunicationMonitor Members
+        /// </summary>
+        StatusMonitorBase ICommunicationMonitor.CommunicationMonitor
+        {
+            get { return _commsMonitor; }
         }
         #endregion
     }
