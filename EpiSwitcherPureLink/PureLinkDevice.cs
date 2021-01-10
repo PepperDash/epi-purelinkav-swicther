@@ -120,22 +120,6 @@ namespace PureLinkPlugin
         public BoolFeedback ConnectFeedback { get; private set; }
 
         /// <summary>
-        /// Implement IOnline
-        /// </summary>
-        public BoolFeedback IsOnline
-        {
-            get { return _commsMonitor.IsOnlineFeedback; }
-        }
-
-        /// <summary>
-        /// Implement ICommunicationMonitor
-        /// </summary>
-        public StatusMonitorBase CommunicationMonitor
-        {
-            get { return _commsMonitor; }
-        }
-
-        /// <summary>
         /// Reports online feedback through the bridge
         /// </summary>
         public BoolFeedback OnlineFeedback { get; private set; }
