@@ -14,6 +14,7 @@ env:
   # solution name does not include extension. .sln is assumed
   SOLUTION_PATH: EpiSwitcherPureLink\
   SOLUTION_FILE: pure-link-media-axis
+
   # Do not edit this, we're just creating it here
   VERSION: 0.0.0-buildtype-buildnumber
   # Defaults to debug for build type

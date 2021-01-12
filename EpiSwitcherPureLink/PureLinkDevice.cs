@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Crestron.SimplSharp;
-using Crestron.SimplSharp.Ssh;
 using Crestron.SimplSharpPro.DeviceSupport;
-using Crestron.SimplSharpPro.CrestronThread;
-using Crestron.SimplSharpPro.DM;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
-using PepperDash.Essentials.Devices.Common.VideoCodec.Cisco;
 
 namespace PureLinkPlugin
 {
@@ -42,11 +37,11 @@ namespace PureLinkPlugin
         /// </summary>
         public const int MaxIo = 72;
 
-        private CrestronQueue<string> _commsQueue;
-        private CCriticalSection _commsQueueLock;
+        private readonly CrestronQueue<string> _commsQueue;
+        private readonly CCriticalSection _commsQueueLock;
 
-        private CrestronQueue<string> _parserQueue;
-        private CCriticalSection _parserLock;
+        private readonly CrestronQueue<string> _parserQueue;
+        private readonly CCriticalSection _parserLock;
 
         //private readonly PureLinkCmdProcessor _cmdProcessor = new PureLinkCmdProcessor();
 
