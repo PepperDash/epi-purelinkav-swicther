@@ -22,6 +22,12 @@ namespace PureLinkPlugin
         public PureLinkCmdProcessor()
         {
             worker = new Thread(ProcessFeedback, null, Thread.eThreadStartOptions.Running);
+
+            CrestronEnvironment.ProgramStatusEventHandler += type =>
+                {
+                    if (type == eProgramStatusEventType.Stopping)
+                        Dispose();
+                };
         }
 
         /// <summary>
@@ -30,6 +36,9 @@ namespace PureLinkPlugin
         /// <param name="task"></param>
         public void EnqueueTask(Action task)
         {
+            if (_disposed)
+                return;
+
             tasks.Enqueue(task);
             wh.Set();
         }
@@ -54,17 +63,31 @@ namespace PureLinkPlugin
             return null;
         }
 
-        #region IDisposable Members
+        // To detect redundant calls
+        private bool _disposed = false;
 
-        /// <summary>
-        /// Method to dispose of the worker thread
-        /// </summary>
+        // Public implementation of Dispose pattern callable by consumers.
         public void Dispose()
         {
-            EnqueueTask(null);
-            worker.Join();
-            wh.Close();
+            Dispose(true);
+            CrestronEnvironment.GC.SuppressFinalize(this);
         }
-        #endregion
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                EnqueueTask(null);
+                worker.Join();
+                wh.Close();
+                wh.Dispose();
+            }
+
+            _disposed = true;
+        }
     }
 }
