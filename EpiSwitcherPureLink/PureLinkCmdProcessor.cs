@@ -61,7 +61,7 @@ namespace PureLinkPlugin
         /// </summary>
         public void Dispose()
         {
-            tasks.Enqueue(null);
+            EnqueueTask(null);
             worker.Join();
             wh.Close();
         }
