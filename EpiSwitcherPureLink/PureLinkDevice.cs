@@ -1,11 +1,14 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using Crestron.SimplSharp;
 using Crestron.SimplSharpPro.DeviceSupport;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
+using PepperDash_Essentials_Core.Queues;
 
 namespace PureLinkPlugin
 {
@@ -25,26 +28,28 @@ namespace PureLinkPlugin
         private readonly PureLinkConfig _config; // Store the config locally
 
         #region Constants
+        
+        /// <summary>
+        /// "*999?version!" - Check firmware version
+        /// "*999I000!" - Check ruoters ID
+        /// "“*255sI Router ID 255" - Response from router ID check
+        /// </summary>
 
-        private const string PollString = "*999?version";
-        private const string PollVideo = ("*999?vallio");
-        private const string PollAudio = ("*999?aallio");
-        private const string ClearVideoRoutes = ("*999vdallio");
-        private const string ClearAudioRoutes = ("*999adallio");
-        private const string StartChar = "*";
+        public const string PollString = "*999?version";
+        public const string PollVideo = ("*999?vallio");
+        public const string PollAudio = ("*999?aallio");
+        public const string ClearVideoRoutes = ("*999vdallio");
+        public const string ClearAudioRoutes = ("*999adallio");
+        public const string StartChar = "*";
+        
         /// <summary>
         /// Switcher Max Array value for all Input/Output
         /// </summary>
         public const int MaxIo = 72;
 
-        private readonly CrestronQueue<string> _commsQueue;
-        private readonly CCriticalSection _commsQueueLock;
-
-        private readonly CrestronQueue<string> _parserQueue;
-        private readonly CCriticalSection _parserLock;
-
-        //private readonly PureLinkCmdProcessor _cmdProcessor = new PureLinkCmdProcessor();
-
+        private readonly StringResponseProcessor _responseProcessor;
+        private readonly IQueue<IQueueMessage> _commandQueue;
+        
         #endregion Constants
 
         #region IBasicCommunication Properties, Constructor, and Feedbacks
@@ -56,7 +61,7 @@ namespace PureLinkPlugin
         /// <summary>
         /// Set this value to that of the delimiter used by the API (if applicable)
         /// </summary>
-        private const string CommsDelimiter = "!\r";
+        public const string CommsDelimiter = "!\n";
 
         /// <summary>
         /// Sets and reports the state of EnableAudioBreakaway 
@@ -219,6 +224,7 @@ namespace PureLinkPlugin
             _parserQueue = new CrestronQueue<string>();
 
             _config = config;
+            _commandQueue = new GenericQueue(Key, 50);
             if (string.IsNullOrEmpty(_config.DeviceId))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "Config DeviceId value invalid. Setting value to 999.");
@@ -279,17 +285,17 @@ namespace PureLinkPlugin
             #region Communication data event handlers.  Comment out any that don't apply to the API type
 
             // _comms gather for ASCII based API's that have a defined delimiter
-            var commsGather = new CommunicationGather(_comms, CommsDelimiter);
-            commsGather.LineReceived += Handle_LineRecieved;
+            var commsGather = new CommunicationGather(_comms, CommsDelimiter);          
+            _responseProcessor = new StringResponseProcessor(commsGather, ProcessResponse);
 
             #endregion Communication data event handlers.  Comment out any that don't apply to the API type
 
             InitializeInputNames(_config.Inputs);
             InitializeOutputNames(_config.Outputs);
 
-            Debug.Console(0, this, "Constructing new {0} instance complete", name);
-            Debug.Console(0, new string('*', 80));
-            Debug.Console(0, new string('*', 80));
+            Debug.Console(1, this, "Constructing new {0} instance complete", name);
+            Debug.Console(1, new string('*', 80));
+            Debug.Console(1, new string('*', 80));
         }
 
         private int GetSocketStatus()
@@ -412,17 +418,11 @@ namespace PureLinkPlugin
             SetPollAudio();
         }
 
-        // TODO [X] If using an API with a delimeter, keep the method below
-        private void Handle_LineRecieved(object sender, GenericCommMethodReceiveTextArgs args)
+        private void ProcessResponse(string response)
         {
-            if (args == null)
+            if (string.IsNullOrEmpty(response))
             {
-                Debug.Console(2, this, "HandleLineReceived: args are null");
-                return;
-            }
-            if (string.IsNullOrEmpty(args.Text))
-            {
-                Debug.Console(2, this, "HandleLineReceived: args.Text is null or empty");
+                Debug.Console(2, this, "Process Reponse: response is null or empty");
                 return;
             }
 
@@ -438,6 +438,36 @@ namespace PureLinkPlugin
         {
             if (string.IsNullOrEmpty(data))
             {
+                var data = response.Trim(); // Remove leading/trailing white-space characters
+
+                if (data.ToLower().Contains("Command Code Error!"))
+                {
+                    Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Command Code Error");
+                    return;
+                }
+
+                if (data.ToLower().Contains("Router ID Error!"))
+                {
+                    Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Router ID Error");
+                    return;
+                }
+
+                if (data.ToLower().Contains("sc"))
+                {
+                    Debug.Console(2, this, "Received Audio-Video Switch FB");
+                    ParseIoResponse(data, RouteType.AudioVideo);
+                }
+                else if (data.ToLower().Contains("sv") || data.ToLower().Contains("s?v"))
+                {
+                    Debug.Console(2, this, "Received Video Switch FB");
+                    ParseIoResponse(data, RouteType.Video);
+                }
+                else if (data.ToLower().Contains("sa") || data.ToLower().Contains("s?a"))
+                {
+                    Debug.Console(2, this, "Received Audio Switch FB");
+                    ParseIoResponse(data, RouteType.Audio);
+                }
+
                 Debug.Console(2, this, "HandleLineReceived: data is null or empty");
                 return;
             }
@@ -462,8 +492,7 @@ namespace PureLinkPlugin
             }
             else if (data.Contains("sa") || data.ToLower().Contains("s?a"))
             {
-                Debug.Console(2, this, "Received Audio Switch FB");
-                ParseIoResponse(data, RouteType.Audio);
+                Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse Exception: {0}", ex.InnerException.Message);
             }
         }
 
@@ -477,9 +506,11 @@ namespace PureLinkPlugin
         /// <param name="text">Command to be sent</param>		
         public void SendText(string text)
         {
-            if (string.IsNullOrEmpty(text)) return;
-            Debug.Console(2, this, "SendText = {0}{1}", text, CommsDelimiter);
-            _comms.SendText(string.Format("{0}{1}{2}", text, CommsDelimiter, "\n"));
+            if (string.IsNullOrEmpty(text)) 
+                return;
+
+            var message = new PureLinkMessage(_comms, text);
+            _commandQueue.Enqueue(message);
         }
 
         /// <summary>
@@ -660,8 +691,8 @@ namespace PureLinkPlugin
             };
             #endregion links to bridge
         }
-
-#warning Method SetVideoEnter() below should be refactored
+        
+        #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if video route should be called
         /// </summary>            
@@ -688,7 +719,7 @@ namespace PureLinkPlugin
             }
         }
 
-#warning Method SetAudioEnter() below should be refactored
+        #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if audio route should be called
         /// </summary>            
@@ -880,27 +911,6 @@ namespace PureLinkPlugin
             {
                 Debug.Console(2, this, Debug.ErrorLogLevel.Error, "UpdateAudioRoute Exception:{0} StackTrace:{1}\r", ex.Message, ex.StackTrace);
             }
-
-        }
-        #endregion
-
-        #region EnqueueSentText DequeueSentText ExecuteSwitch
-
-        /// <summary>
-        /// Enqueues the SendText mehtod with a command
-        /// </summary>
-        /// <param name="cmd">string command to be enqueued in the SendText method, not including the delimiter</param>
-        public void EnqueueSendText(string cmd)
-        {
-            if (cmd == null)
-                return;
-
-            _commsQueue.TryToEnqueue(cmd);
-
-            var lockState = _commsQueueLock.TryEnter(); //lockState is asking if Dequeue is active or inuse or triggered
-                                                        //This prevents multiple queues in action
-            if (lockState)
-                CrestronInvoke.BeginInvoke((o) => DequeueSendText());
         }
 
         /// <summary>
@@ -931,7 +941,8 @@ namespace PureLinkPlugin
                     _commsQueueLock.Leave();
             }
         }
-
+        
+        #region ExecuteSwitch
         /// <summary>
         /// Plugin Enqueue data to parse
         /// </summary>
