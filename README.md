@@ -212,7 +212,7 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 ### Digitals
 | dig-o            | I/O | dig-i                    |
 |------------------|-----|--------------------------|
-| Video Enter      | 1   |                          |
+| Video Enter      | 1   | IsOnline                 |
 | Audio Enter      | 2   |                          |
 | Audio Breakaway  | 3   | Audio Breakaway Feedback |
 | Poll             | 6   |                          |

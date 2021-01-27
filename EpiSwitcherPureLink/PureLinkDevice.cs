@@ -1,17 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Crestron.SimplSharp;
-using Crestron.SimplSharp.Ssh;
 using Crestron.SimplSharpPro.DeviceSupport;
-using Crestron.SimplSharpPro.CrestronThread;
-using Crestron.SimplSharpPro.DM;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
-using PepperDash.Essentials.Devices.Common.VideoCodec.Cisco;
 using PepperDash_Essentials_Core.Queues;
 
 namespace PureLinkPlugin
@@ -27,12 +23,12 @@ namespace PureLinkPlugin
     /// </example>
     /// Notes: Delate is a signature for a method. 
 
-    public class PureLinkDevice : EssentialsBridgeableDevice
+    public class PureLinkDevice : EssentialsBridgeableDevice, IOnline, ICommunicationMonitor
     {
         private readonly PureLinkConfig _config; // Store the config locally
 
         #region Constants
-
+        
         /// <summary>
         /// "*999?version!" - Check firmware version
         /// "*999I000!" - Check ruoters ID
@@ -45,6 +41,7 @@ namespace PureLinkPlugin
         public const string ClearVideoRoutes = ("*999vdallio");
         public const string ClearAudioRoutes = ("*999adallio");
         public const string StartChar = "*";
+        
         /// <summary>
         /// Switcher Max Array value for all Input/Output
         /// </summary>
@@ -52,7 +49,7 @@ namespace PureLinkPlugin
 
         private readonly StringResponseProcessor _responseProcessor;
         private readonly IQueue<IQueueMessage> _commandQueue;
-
+        
         #endregion Constants
 
         #region IBasicCommunication Properties, Constructor, and Feedbacks
@@ -221,6 +218,10 @@ namespace PureLinkPlugin
             Debug.Console(0, this, "Constructing new {0} instance", name);
 
             // TODO [X] Update the constructor as needed for the plugin device being developed
+            _commsQueueLock = new CCriticalSection();
+            _commsQueue = new CrestronQueue<string>();
+            _parserLock = new CCriticalSection();
+            _parserQueue = new CrestronQueue<string>();
 
             _config = config;
             _commandQueue = new GenericQueue(Key, 50);
@@ -249,8 +250,12 @@ namespace PureLinkPlugin
             if (_config.ErrorTimeoutMs == 0)
                 _config.ErrorTimeoutMs = 300000;
 
+            var socket = _comms as ISocketStatus;
+
+            var result = (socket != null) ? ConnectFb : _commsMonitor.IsOnline;
+            OnlineFeedback = new BoolFeedback(() => result);
+
             ConnectFeedback = new BoolFeedback(() => ConnectFb);
-            OnlineFeedback = new BoolFeedback(() => _commsMonitor.IsOnline);
             EnableAudioBreakawayFeedback = new BoolFeedback(() => EnableAudioBreakaway);
             StatusFeedback = new IntFeedback(GetSocketStatus);
 
@@ -270,8 +275,7 @@ namespace PureLinkPlugin
             // The _commsMonitor.Status only changes based on the values placed in the Poll times
             // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
             _commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
-
-            var socket = _comms as ISocketStatus;
+            
             if (socket != null)
             {
                 // device comms is IP **ELSE** device comms is RS232
@@ -422,7 +426,17 @@ namespace PureLinkPlugin
                 return;
             }
 
-            try
+            Debug.Console(1, this, "handleLineReceived args.Text: {0}", args.Text); //Show me what we received
+            EnqueueParseData(args.Text); 
+        }
+
+        /// <summary>
+        /// Parse incoming data
+        /// </summary>
+        /// <param name="data"></param>
+        public void ParseData(string data)
+        {
+            if (string.IsNullOrEmpty(data))
             {
                 var data = response.Trim(); // Remove leading/trailing white-space characters
 
@@ -453,8 +467,30 @@ namespace PureLinkPlugin
                     Debug.Console(2, this, "Received Audio Switch FB");
                     ParseIoResponse(data, RouteType.Audio);
                 }
+
+                Debug.Console(2, this, "HandleLineReceived: data is null or empty");
+                return;
             }
-            catch (Exception ex)
+
+            data.Trim().ToLower(); // Remove leading/trailing white-space characters             
+
+            if (data.Contains("error"))
+            {
+                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "HandleLineReceived: {0}", data);
+                return;
+            }
+
+            if (data.Contains("sc"))
+            {
+                Debug.Console(2, this, "Received Audio-Video Switch FB");                
+                ParseIoResponse(data, RouteType.AudioVideo);
+            }
+            else if (data.Contains("sv") || data.ToLower().Contains("s?v"))
+            {
+                Debug.Console(2, this, "Received Video Switch FB");
+                ParseIoResponse(data, RouteType.Video);
+            }
+            else if (data.Contains("sa") || data.ToLower().Contains("s?a"))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse Exception: {0}", ex.InnerException.Message);
             }
@@ -486,7 +522,8 @@ namespace PureLinkPlugin
         public void Poll()
         {
             // TODO [X] Update Poll method as needed for the plugin being developed
-            SendText(_config.PollString);
+            //SendText(_config.PollString);
+            EnqueueSendText(_config.PollString);
         }
 
         #endregion IBasicCommunication Properties and Constructor
@@ -534,6 +571,7 @@ namespace PureLinkPlugin
             trilist.SetSigTrueAction(joinMap.EnableAudioBreakaway.JoinNumber, SetEnableAudioBreakaway);
 
             // X.LinkInputSig is feedback to SIMPL
+            OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);
             ConnectFeedback.LinkInputSig(trilist.BooleanInput[joinMap.Connect.JoinNumber]);
             StatusFeedback.LinkInputSig(trilist.UShortInput[joinMap.Status.JoinNumber]);
             EnableAudioBreakawayFeedback.LinkInputSig(trilist.BooleanInput[joinMap.EnableAudioBreakaway.JoinNumber]);
@@ -653,7 +691,7 @@ namespace PureLinkPlugin
             };
             #endregion links to bridge
         }
-
+        
         #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if video route should be called
@@ -722,7 +760,8 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollVideo()
         {
-            SendText(PollVideo);
+            //SendText(PollVideo);
+            EnqueueSendText(PollVideo);
         }
 
         /// <summary>
@@ -730,7 +769,8 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollAudio()
         {
-            SendText(PollAudio);
+            //SendText(PollAudio);
+            EnqueueSendText(PollAudio);
         }
 
         /// <summary>
@@ -739,7 +779,8 @@ namespace PureLinkPlugin
         public void SetClearVideoRoutes()
         {
 
-            SendText(ClearVideoRoutes);
+            //SendText(ClearVideoRoutes);
+            EnqueueSendText(ClearVideoRoutes);
         }
 
         /// <summary>
@@ -748,7 +789,8 @@ namespace PureLinkPlugin
         public void SetClearAudioRoutes()
         {
 
-            SendText(ClearAudioRoutes);
+            //SendText(ClearAudioRoutes);
+            EnqueueSendText(ClearAudioRoutes);
         }
 
         /// <summary>
@@ -756,6 +798,7 @@ namespace PureLinkPlugin
         /// </summary>
         private void UpdateFeedbacks()
         {
+            OnlineFeedback.FireUpdate();
             ConnectFeedback.FireUpdate();
             StatusFeedback.FireUpdate();
             EnableAudioBreakawayFeedback.FireUpdate();
@@ -870,9 +913,80 @@ namespace PureLinkPlugin
             }
         }
 
-        #endregion
-
+        /// <summary>
+        /// Plugin dequeue and call SentText() method
+        /// </summary>
+        private void DequeueSendText()
+        {
+            try
+            {
+                while (true)
+                {
+                    //var cmd = _commsQueue.TryToDequeue();
+                    var cmd = _commsQueue.Dequeue();
+                    if (!string.IsNullOrEmpty(cmd))
+                    {
+                        SendText(cmd);
+                        //Thread.Sleep(200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, "DequeueSendText Exception: {0}", ex);
+            }
+            finally
+            {
+                if (_commsQueueLock != null)
+                    _commsQueueLock.Leave();
+            }
+        }
+        
         #region ExecuteSwitch
+        /// <summary>
+        /// Plugin Enqueue data to parse
+        /// </summary>
+        /// <param name="cmd"></param>
+        public void EnqueueParseData(string cmd)
+        {
+            if (cmd == null)
+                return;
+
+            _parserQueue.TryToEnqueue(cmd);
+
+            var lockState = _parserLock.TryEnter();
+            if (lockState)
+                CrestronInvoke.BeginInvoke((o) => DequeueParseData());
+        }
+
+        /// <summary>
+        /// Plugin dequeue and call ParseData() method
+        /// </summary>
+        private void DequeueParseData()
+        {
+            try
+            {
+                while (true)
+                {                    
+                    var cmd = _parserQueue.Dequeue();
+                    if (!string.IsNullOrEmpty(cmd))
+                    {                        
+                        ParseData(cmd);
+                        //Thread.Sleep(200);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Console(2, this, "DequeueParseData Exception: {0}", ex);
+            }
+            finally
+            {
+                if (_parserLock != null)
+                    _parserLock.Leave();
+            }
+        }
+
         /// <summary>
         /// Executes switch
         /// </summary>
@@ -904,8 +1018,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}CI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Video:
@@ -919,8 +1033,8 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}VCI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
                 case eRoutingSignalType.Audio:
@@ -934,11 +1048,29 @@ namespace PureLinkPlugin
                                 cmd = string.Format("{0}{1}ACI{2:D3}O{3:D3}", StartChar, _config.DeviceId, input, output);
                                 break;
                         }
-                        //EnqueueSendText(cmd);
-                        SendText(cmd);
+                        EnqueueSendText(cmd);
+                        //SendText(cmd);
                         break;
                     }
             }
+        }
+        #endregion
+
+        #region Interfaces
+        /// <summary>
+        /// IOnline Members
+        /// </summary>
+        BoolFeedback IOnline.IsOnline
+        {
+            get { return OnlineFeedback; }
+        }
+
+        /// <summary>
+        /// ICommunicationMonitor Members
+        /// </summary>
+        StatusMonitorBase ICommunicationMonitor.CommunicationMonitor
+        {
+            get { return _commsMonitor; }
         }
         #endregion
     }
