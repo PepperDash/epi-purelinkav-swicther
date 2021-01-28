@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using Crestron.SimplSharp;
 using PepperDash.Core;
 using PepperDash_Essentials_Core.Queues;
 
@@ -22,6 +19,7 @@ namespace PureLinkPlugin
 
             var textToSend = new StringBuilder(message);
             textToSend.Append(PureLinkDevice.CommsDelimiter);
+            textToSend.Append("\n");
 
             _message = textToSend.ToString();
         }
@@ -36,7 +34,7 @@ namespace PureLinkPlugin
 
         public override string ToString()
         {
-            return _message;
+            return _message.Trim();
         }
     }
 }

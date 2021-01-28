@@ -64,7 +64,7 @@ namespace PureLinkPlugin
         /// <summary>
         /// Set this value to that of the delimiter used by the API (if applicable)
         /// </summary>
-        public const string CommsDelimiter = "!\n";
+        public const string CommsDelimiter = "!\r";
 
         /// <summary>
         /// Sets and reports the state of EnableAudioBreakaway 
