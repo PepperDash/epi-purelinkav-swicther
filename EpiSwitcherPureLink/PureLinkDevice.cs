@@ -245,11 +245,6 @@ namespace PureLinkPlugin
             if (_config.ErrorTimeoutMs == 0)
                 _config.ErrorTimeoutMs = 300000;
 
-            var socket = _comms as ISocketStatus;
-
-            var result = (socket != null) ? ConnectFb : _commsMonitor.IsOnline;
-            OnlineFeedback = new BoolFeedback(() => result);
-
             ConnectFeedback = new BoolFeedback(() => ConnectFb);
             EnableAudioBreakawayFeedback = new BoolFeedback(() => EnableAudioBreakaway);
             StatusFeedback = new IntFeedback(GetSocketStatus);
@@ -266,6 +261,10 @@ namespace PureLinkPlugin
             OutputCurrentAudioValueFeedbacks = new Dictionary<uint, IntFeedback>();
 
             _comms = comms;
+            var socket = _comms as ISocketStatus;
+
+            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;
+
             // The comms monitor polls your device
             // The _commsMonitor.Status only changes based on the values placed in the Poll times
             // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
