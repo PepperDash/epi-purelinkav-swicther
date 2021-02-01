@@ -90,12 +90,13 @@ namespace PureLinkPlugin
         /// </remarks>
         public void Connect()
         {
+            _commsMonitor.Start();
             if (_comms.IsConnected)
             {
                 return;
             }
+
             _comms.Connect();
-            _commsMonitor.Start();
         }
 
         /// <summary>
@@ -106,12 +107,13 @@ namespace PureLinkPlugin
         /// </remarks>
         public void Disconnect()
         {
+            _commsMonitor.Stop();
             if (!_comms.IsConnected)
             {
                 return;
             }
+
             _comms.Disconnect();
-            _commsMonitor.Stop();
         }
 
         /// <summary>
@@ -226,7 +228,7 @@ namespace PureLinkPlugin
                 _config.DeviceId = "999";
             }
 
-            if (_config.Model < 1)
+            if (_config.Model > 1)
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "Config Model value invalid. Current value: {0}. Valid values are 0 or 1. Setting value to 0.", _config.Model.ToString());
                 _config.Model = 0;
@@ -263,23 +265,16 @@ namespace PureLinkPlugin
             _comms = comms;
             var socket = _comms as ISocketStatus;
 
-            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;
-
             // The comms monitor polls your device
             // The _commsMonitor.Status only changes based on the values placed in the Poll times
             // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
             _commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
-            
-            if (socket != null)
-            {
-                // device comms is IP **ELSE** device comms is RS232
-                socket.ConnectionChange += socket_ConnectionChange;
-            }
+            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;    
 
             #region Communication data event handlers.  Comment out any that don't apply to the API type
 
             // _comms gather for ASCII based API's that have a defined delimiter
-            var commsGather = new CommunicationGather(_comms, CommsDelimiter);          
+            var commsGather = new CommunicationGather(_comms, CommsDelimiter);
             _responseProcessor = new StringResponseProcessor(commsGather, ProcessResponse);
 
             #endregion Communication data event handlers.  Comment out any that don't apply to the API type
@@ -292,11 +287,40 @@ namespace PureLinkPlugin
             Debug.Console(1, new string('*', 80));
         }
 
+        public override bool CustomActivate()
+        {
+            var socket = _comms as ISocketStatus;
+            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;    
+
+            _commsMonitor.StatusChange += (sender, args) =>
+            {
+                if (!_commsMonitor.IsOnline)
+                    return;
+
+                SetPollVideo();
+                SetPollAudio();
+            };
+
+            if (socket != null)
+            {
+                // device comms is IP **ELSE** device comms is RS232
+                socket.ConnectionChange += socket_ConnectionChange;
+            }
+            else
+            {
+                _commsMonitor.Start();
+            }
+
+            return base.CustomActivate();
+        }
+
         private int GetSocketStatus()
         {
             var tempSocket = _comms as ISocketStatus;
             // Check if tempSocket is null as protection in case configuration didn't implement it
-            if (tempSocket == null) return 0;
+            if (tempSocket == null) 
+                return 0;
+
             return (int)tempSocket.ClientStatus;
         }
 
@@ -394,6 +418,7 @@ namespace PureLinkPlugin
                     if (!string.IsNullOrEmpty(input.Value.Name))
                         input.Value.AudioName = input.Value.Name;
                 }
+
                 InputNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.Name));
                 InputVideoNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.VideoName));
                 InputAudioNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.AudioName));
@@ -407,10 +432,6 @@ namespace PureLinkPlugin
 
             if (StatusFeedback != null)
                 StatusFeedback.FireUpdate();
-
-            if (!ConnectFb) return;
-            SetPollVideo();
-            SetPollAudio();
         }
 
         private void ProcessResponse(string response)
@@ -454,13 +475,13 @@ namespace PureLinkPlugin
 
         private bool CheckResponseForError(string data)
         {
-            if (data.ToLower().Contains("Command Code Error!"))
+            if (data.ToLower().Contains("command code error"))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Command Code Error");
                 return true;
             }
 
-            if (data.ToLower().Contains("Router ID Error!"))
+            if (data.ToLower().Contains("router id error"))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Router ID Error");
                 return true;

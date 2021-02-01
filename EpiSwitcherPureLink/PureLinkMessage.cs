@@ -18,8 +18,7 @@ namespace PureLinkPlugin
                 return;
 
             var textToSend = new StringBuilder(message);
-            textToSend.Append(PureLinkDevice.CommsDelimiter);
-            textToSend.Append("\n");
+            textToSend.Append("!\r");
 
             _message = textToSend.ToString();
         }
