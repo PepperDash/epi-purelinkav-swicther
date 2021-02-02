@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -49,7 +50,10 @@ namespace PureLinkPlugin
 
         private readonly StringResponseProcessor _responseProcessor;
         private readonly IQueue<IQueueMessage> _commandQueue;
-        
+        private readonly IDictionary<uint, PureLinkInput> _inputs = new Dictionary<uint, PureLinkInput>();
+        private readonly IDictionary<uint, PureLinkOutput> _outputs = new Dictionary<uint, PureLinkOutput>();
+        private readonly PureLinkRouteQueue _routes;
+    
         #endregion Constants
 
         #region IBasicCommunication Properties, Constructor, and Feedbacks
@@ -66,7 +70,10 @@ namespace PureLinkPlugin
         /// <summary>
         /// Sets and reports the state of EnableAudioBreakaway 
         /// </summary>
-        public bool EnableAudioBreakaway { get; protected set; }
+        public bool EnableAudioBreakaway 
+        {
+            get { return _routes.AudioFollowVideo; }
+        }
 
         /// <summary>
         /// Reports the comms state of the plugin device
@@ -137,23 +144,6 @@ namespace PureLinkPlugin
         public IntFeedback StatusFeedback { get; private set; }
 
         // TODO [X] Add feedback for routing, names, video routing, audio routing, and outputcurrentnames
-        /// <summary>
-        /// Output current video source. The first uint is the output, then input
-        /// </summary>
-        private readonly Dictionary<uint, uint> _outputCurrentVideoInput = new Dictionary<uint, uint>();
-        /// <summary>
-        /// Output current audio source. The first uint is the output, then input
-        /// </summary>
-        private readonly Dictionary<uint, uint> _outputCurrentAudioInput = new Dictionary<uint, uint>();
-
-        /// <summary>
-        /// Requested video source. The first uint is the output, then input
-        /// </summary>
-        private readonly Dictionary<uint, uint> _requestedVideoInputs = new Dictionary<uint, uint>();
-        /// <summary>
-        /// Requested audio source. The first uint is the output, then input
-        /// </summary>
-        private readonly Dictionary<uint, uint> _requestedAudioInputs = new Dictionary<uint, uint>();
 
         /// <summary>
         /// Plugin property for generic input names
@@ -282,9 +272,18 @@ namespace PureLinkPlugin
             InitializeInputNames(_config.Inputs);
             InitializeOutputNames(_config.Outputs);
 
+            _routes = new PureLinkRouteQueue(_commandQueue, _outputs.Values, _comms);
+
             Debug.Console(1, this, "Constructing new {0} instance complete", name);
             Debug.Console(1, new string('*', 80));
             Debug.Console(1, new string('*', 80));
+
+            CrestronEnvironment.ProgramStatusEventHandler += programEvent =>
+                {
+                    Debug.Console(1, "Received Program Status Event : {0}", programEvent.ToString());
+                    if (programEvent == eProgramStatusEventType.Stopping)
+                        _commsMonitor.Stop();
+                };
         }
 
         public override bool CustomActivate()
@@ -331,67 +330,32 @@ namespace PureLinkPlugin
                 Debug.Console(2, this, "InitializeOutputNames: Outputs null");
                 return;
             }
+
+            var deviceId = Convert.ToInt16(_config.DeviceId);
+            var model = Convert.ToInt16(_config.Model);
+
             foreach (var o in outputs)
             {
-                var output = o;
+                var outputConfig = o;
 
-                if (string.IsNullOrEmpty(output.Value.VideoName))
-                {
-                    if (!string.IsNullOrEmpty(output.Value.Name))
-                        output.Value.VideoName = output.Value.Name;
-                }
-                if (string.IsNullOrEmpty(output.Value.AudioName))
-                {
-                    if (!string.IsNullOrEmpty(output.Value.Name))
-                        output.Value.AudioName = output.Value.Name;
-                }
+                var output = new PureLinkOutput(
+                    Key + "-out" + outputConfig.Key,
+                    outputConfig.Key,
+                    outputConfig.Value,
+                    deviceId,
+                    model,
+                    _inputs.Values);
 
-                OutputNameFeedbacks.Add(output.Key, new StringFeedback(() => output.Value.Name));
-                OutputVideoNameFeedbacks.Add(output.Key, new StringFeedback(() => output.Value.VideoName));
-                OutputAudioNameFeedbacks.Add(output.Key, new StringFeedback(() => output.Value.AudioName));
-                _outputCurrentVideoInput.Add(output.Key, 0);
-                _outputCurrentAudioInput.Add(output.Key, 0);
-                _requestedVideoInputs.Add(output.Key, 0);
-                _requestedAudioInputs.Add(output.Key, 0);
+                _outputs.Add(output.Index, output);
 
-                OutputCurrentVideoValueFeedbacks.Add(output.Key, new IntFeedback(() =>
-                {
-                    uint sourceKey;
-                    var success = _outputCurrentVideoInput.TryGetValue(output.Key, out sourceKey);
-                    return !success ? 0 : Convert.ToInt32(sourceKey);
-                }));
+                OutputNameFeedbacks.Add(outputConfig.Key, new StringFeedback(() => output.Name));
+                OutputVideoNameFeedbacks.Add(outputConfig.Key, new StringFeedback(() => output.VideoName));
+                OutputAudioNameFeedbacks.Add(outputConfig.Key, new StringFeedback(() => output.AudioName));
 
-                OutputCurrentAudioValueFeedbacks.Add(output.Key, new IntFeedback(() =>
-                {
-                    uint sourceKey;
-                    return Convert.ToInt32(_outputCurrentAudioInput.TryGetValue(output.Key, out sourceKey) ? sourceKey : 0);
-                }));
-
-                OutputCurrentVideoNameFeedbacks.Add(output.Key, new StringFeedback(() =>
-                {
-                    uint sourceKey;
-                    PureLinkEntryConfig config;
-                    var success = _outputCurrentVideoInput.TryGetValue(output.Key, out sourceKey);
-                    if (!success)
-                        return string.Empty;
-                    success = _config.Inputs.TryGetValue(sourceKey, out config);
-                    if (!success)
-                        return string.Empty;
-                    return string.IsNullOrEmpty(config.VideoName) ? config.Name : config.VideoName;
-                }));
-
-                OutputCurrentAudioNameFeedbacks.Add(output.Key, new StringFeedback(() =>
-                {
-                    uint sourceKey;
-                    PureLinkEntryConfig config;
-                    var success = _outputCurrentAudioInput.TryGetValue(output.Key, out sourceKey);
-                    if (!success)
-                        return string.Empty;
-                    success = _config.Inputs.TryGetValue(sourceKey, out config);
-                    if (!success)
-                        return string.Empty;
-                    return string.IsNullOrEmpty(config.AudioName) ? config.Name : config.AudioName;
-                }));
+                OutputCurrentVideoValueFeedbacks.Add(outputConfig.Key, output.CurrentlyRoutedVideoValue);
+                OutputCurrentAudioValueFeedbacks.Add(outputConfig.Key, output.CurrentlyRoutedAudioValue);
+                OutputCurrentVideoNameFeedbacks.Add(outputConfig.Key, output.CurrentlyRouteVideoName);
+                OutputCurrentAudioNameFeedbacks.Add(outputConfig.Key, output.CurrentlyRouteAudioName);
             }
         }
 
@@ -406,22 +370,13 @@ namespace PureLinkPlugin
             {
                 // As the foreach runs, 'input' could potentially change
                 // assign inputs to input then subsuquent changes don't matter on 'item'
-                var input = i;
+                var inputConfig = i;
+                var input = new PureLinkInput(Key + "-in" + inputConfig.Key, inputConfig.Key, inputConfig.Value);
 
-                if (string.IsNullOrEmpty(input.Value.VideoName))
-                {
-                    if (!string.IsNullOrEmpty(input.Value.Name))
-                        input.Value.VideoName = input.Value.Name;
-                }
-                if (string.IsNullOrEmpty(input.Value.AudioName))
-                {
-                    if (!string.IsNullOrEmpty(input.Value.Name))
-                        input.Value.AudioName = input.Value.Name;
-                }
-
-                InputNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.Name));
-                InputVideoNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.VideoName));
-                InputAudioNameFeedbacks.Add(input.Key, new StringFeedback(() => input.Value.AudioName));
+                _inputs.Add(input.Index, input);
+                InputNameFeedbacks.Add(input.Index, new StringFeedback(() => input.Name));
+                InputVideoNameFeedbacks.Add(input.Index, new StringFeedback(() => input.VideoName));
+                InputAudioNameFeedbacks.Add(input.Index, new StringFeedback(() => input.AudioName));
             }
         }
 
@@ -444,37 +399,24 @@ namespace PureLinkPlugin
 
             try
             {
-                var data = response
-                    .Trim()
-                    .ToLower(); // Remove leading/trailing white-space characters
+                var data = response.Trim();
 
                 if (CheckResponseForError(data)) 
                     return;
 
-                if (data.Contains("sc"))
-                {
-                    Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    ParseIoResponse(data, RouteType.AudioVideo);
-                }
-                else if (data.Contains("sv") || data.ToLower().Contains("s?v"))
-                {
-                    Debug.Console(2, this, "Received Video Switch FB");
-                    ParseIoResponse(data, RouteType.Video);
-                }
-                else if (data.Contains("sa") || data.ToLower().Contains("s?a"))
-                {
-                    Debug.Console(2, this, "Received Audio Switch FB");
-                    ParseIoResponse(data, RouteType.Audio);
-                }
+                foreach (var pureLinkOutput in _outputs.Values)
+                    pureLinkOutput.ProcessResponse(data);
             }
             catch (Exception ex)
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse Exception: {0}", ex.InnerException.Message);
+                throw;
             }
         }
 
         private bool CheckResponseForError(string data)
         {
+            data = data.ToLower();
             if (data.ToLower().Contains("command code error"))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Command Code Error");
@@ -516,8 +458,8 @@ namespace PureLinkPlugin
         public void Poll()
         {
             // TODO [X] Update Poll method as needed for the plugin being developed
-            //SendText(_config.PollString);
-            SendText(_config.PollString);
+            var poll = PureLinkMessage.BuildCommandFromString(_config.PollString);
+            _comms.SendText(poll);
         }
 
         #endregion IBasicCommunication Properties and Constructor
@@ -554,15 +496,15 @@ namespace PureLinkPlugin
             #region links to bridge
             // trilist.setX means its coming from SIMPL            
             trilist.SetString(joinMap.DeviceName.JoinNumber, Name);
-            trilist.SetSigTrueAction(joinMap.VideoEnter.JoinNumber, SetVideoEnter);
-            trilist.SetSigTrueAction(joinMap.AudioEnter.JoinNumber, SetAudioEnter);
+            trilist.SetBoolSigAction(joinMap.VideoEnter.JoinNumber, SetVideoEnter);
+            trilist.SetBoolSigAction(joinMap.AudioEnter.JoinNumber, SetAudioEnter);
             trilist.SetSigTrueAction(joinMap.Connect.JoinNumber, Connect);
             trilist.SetSigTrueAction(joinMap.Disconnect.JoinNumber, Disconnect);
             trilist.SetSigTrueAction(joinMap.PollVideo.JoinNumber, SetPollVideo);
             trilist.SetSigTrueAction(joinMap.PollAudio.JoinNumber, SetPollAudio);
             trilist.SetSigTrueAction(joinMap.ClearVideoRoutes.JoinNumber, SetClearVideoRoutes);
             trilist.SetSigTrueAction(joinMap.ClearAudioRoutes.JoinNumber, SetClearAudioRoutes);
-            trilist.SetSigTrueAction(joinMap.EnableAudioBreakaway.JoinNumber, SetEnableAudioBreakaway);
+            trilist.SetBoolSigAction(joinMap.EnableAudioBreakaway.JoinNumber, SetEnableAudioBreakaway);
 
             // X.LinkInputSig is feedback to SIMPL
             OnlineFeedback.LinkInputSig(trilist.BooleanInput[joinMap.IsOnline.JoinNumber]);
@@ -649,10 +591,15 @@ namespace PureLinkPlugin
                 var output = kvp.Key;
                 // Link incoming from SIMPL EISC bridge (aka route request) to internal method 
                 trilist.SetUShortSigAction(join, (input) =>
-                {
-                    if (_requestedVideoInputs.ContainsKey(output))
-                        _requestedVideoInputs[output] = input;
-                });
+                    {
+                        PureLinkOutput outputToSet;
+                        if (!_outputs.TryGetValue(output, out outputToSet))
+                            return;
+
+                        outputToSet.RequestVideoRoute(input);
+                        _routes.EnqueueVideoOutputForRoute(outputToSet);
+                    });
+
                 // Link route feedbacks to SIMPL EISC bridge
                 var feedback = kvp.Value;
                 if (feedback == null) continue;
@@ -665,8 +612,12 @@ namespace PureLinkPlugin
                 var output = kvp.Key;
                 trilist.SetUShortSigAction(join, (input) =>
                 {
-                    if (_requestedAudioInputs.ContainsKey(output))
-                        _requestedAudioInputs[output] = input;
+                    PureLinkOutput outputToSet;
+                    if (!_outputs.TryGetValue(output, out outputToSet))
+                        return;
+
+                    outputToSet.RequestAudioRoute(input);
+                    _routes.EnqueueAudioOutputForRoute(outputToSet);
                 });
                 var feedback = kvp.Value;
                 if (feedback == null) continue;
@@ -674,7 +625,6 @@ namespace PureLinkPlugin
             }
 
             UpdateFeedbacks();
-            Connect();
 
             trilist.OnlineStatusChange += (o, a) =>
             {
@@ -690,62 +640,26 @@ namespace PureLinkPlugin
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if video route should be called
         /// </summary>            
-        private void SetVideoEnter()
+        private void SetVideoEnter(bool state)
         {
-            foreach (var kvp in _requestedVideoInputs)
-            {
-                var requestsedInput = kvp.Value;
-                var output = kvp.Key;
-                if (requestsedInput == 0)
-                    continue;
-                uint currentInput;
-                var success = _outputCurrentVideoInput.TryGetValue(output, out currentInput);
-                if (!success)
-                {
-                    Debug.Console(2, this, Debug.ErrorLogLevel.Error, "SetVideoEnter: Output {0} does not exist in configuration", output);
-                    continue;
-                }
-                if (currentInput == requestsedInput) continue;
-                var inputToSend = (requestsedInput == 999) ? 0 : requestsedInput;
-
-                var sType = EnableAudioBreakaway ? eRoutingSignalType.Video : eRoutingSignalType.AudioVideo;
-                ExecuteSwitch(inputToSend, output, sType);
-            }
+            _routes.AllowVideoRouting = state;
         }
 
         #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if audio route should be called
         /// </summary>            
-        private void SetAudioEnter()
+        private void SetAudioEnter(bool state)
         {
-            foreach (var kvp in _requestedAudioInputs)
-            {
-                var requestedInput = kvp.Value;
-                var output = kvp.Key;
-                if (requestedInput == 0)
-                    continue;
-                uint currentInput;
-                var success = _outputCurrentAudioInput.TryGetValue(output, out currentInput);
-                if (!success)
-                {
-                    Debug.Console(2, this, Debug.ErrorLogLevel.Error, "SetAudioEnter: Output {0} does not exist in configuration", output);
-                    continue;
-                }
-                if (currentInput == requestedInput) continue;
-                var inputToSend = (requestedInput == 999) ? 0 : requestedInput;
-
-                var sType = EnableAudioBreakaway ? eRoutingSignalType.Audio : eRoutingSignalType.AudioVideo;
-                ExecuteSwitch(inputToSend, output, sType);
-            }
+            _routes.AllowAudioRouting = state;
         }
 
         /// <summary>
         /// Toggles the state of EnableAudioBreakaway and triggers the FireUpdate method
         /// </summary>
-        private void SetEnableAudioBreakaway()
+        private void SetEnableAudioBreakaway(bool state)
         {
-            EnableAudioBreakaway = !EnableAudioBreakaway;
+            _routes.AudioFollowVideo = !state;
             EnableAudioBreakawayFeedback.FireUpdate();
         }
 
@@ -754,7 +668,14 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollVideo()
         {
-            SendText(PollVideo);
+            foreach (var pollToSend in _outputs
+                .Values
+                .Select(pureLinkOutput => pureLinkOutput.GetCurrentVideoRoutePoll())
+                .Where(poll => !String.IsNullOrEmpty(poll))
+                .Select(poll => new PureLinkMessage(_comms, poll))) 
+                {
+                    _commandQueue.Enqueue(pollToSend);
+                }
         }
 
         /// <summary>
@@ -762,7 +683,14 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollAudio()
         {
-            SendText(PollAudio);
+            foreach (var pollToSend in _outputs
+                .Values
+                .Select(pureLinkOutput => pureLinkOutput.GetCurrentAudioRoutePoll())
+                .Where(poll => !String.IsNullOrEmpty(poll))
+                .Select(poll => new PureLinkMessage(_comms, poll))) 
+                {
+                    _commandQueue.Enqueue(pollToSend);
+                }
         }
 
         /// <summary>
@@ -778,7 +706,6 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetClearAudioRoutes()
         {
-
             SendText(ClearAudioRoutes);
         }
 
@@ -815,94 +742,10 @@ namespace PureLinkPlugin
         }
         #endregion Overrides of EssentialsBridgeableDevice
 
-        #region ParseData
         /// <summary>
         /// Plugin public eumermeration with only three values including: Audio, Video, or AudioVideo        
         /// </summary>                
         public enum RouteType { Audio, Video, AudioVideo }
-
-        /// <summary>
-        /// Plugin parse method calling for Regex pattern on incoming Handle_LineReceived data
-        /// </summary>
-        /// <param name="response"></param>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public void ParseIoResponse(string response, RouteType type)
-        {
-            try
-            {
-                //Get string response and return an array of IO
-                //The '@' character below means its a string literal not requiring escape characters
-                var regex = new Regex(@"I(\d{3})O(\d{3})");
-                var matches = regex.Matches(response);
-
-                foreach (Match match in matches)
-                {
-                    if (match.Groups == null) continue;
-
-                    var output = Convert.ToUInt16(match.Groups[2].Value);
-                    var input = Convert.ToUInt16(match.Groups[1].Value);
-
-                    if (type == RouteType.Video || type == RouteType.AudioVideo)
-                        UpdateVideoRoute(output, input);
-                    if (type == RouteType.Audio || type == RouteType.AudioVideo)
-                        UpdateAudioRoute(output, input);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "ParseIoResponse Exception:{0} StackTrace:{1}\r", ex.Message, ex.StackTrace);
-                throw;
-            }
-        }
-
-        private void UpdateVideoRoute(uint output, uint value)
-        {
-            try
-            {
-                _outputCurrentVideoInput[output] = value;
-
-                StringFeedback nameFeedback;
-                if (OutputCurrentVideoNameFeedbacks.TryGetValue(output, out nameFeedback))
-                {
-                    nameFeedback.FireUpdate();
-                }
-
-                IntFeedback numberFeedback;
-                if (OutputCurrentVideoValueFeedbacks.TryGetValue(output, out numberFeedback))
-                {
-                    numberFeedback.FireUpdate();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "UpdateVideoRoute Exception:{0} StackTrace:{1}\r", ex.Message, ex.StackTrace);
-            }
-        }
-
-        private void UpdateAudioRoute(uint output, uint value)
-        {
-            try
-            {
-                _outputCurrentAudioInput[output] = value;
-
-                StringFeedback nameFeedback;
-                if (OutputCurrentAudioNameFeedbacks.TryGetValue(output, out nameFeedback))
-                {
-                    nameFeedback.FireUpdate();
-                }
-                IntFeedback numberFeedback;
-                if (OutputCurrentAudioValueFeedbacks.TryGetValue(output, out numberFeedback))
-                {
-                    numberFeedback.FireUpdate();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(2, this, Debug.ErrorLogLevel.Error, "UpdateAudioRoute Exception:{0} StackTrace:{1}\r", ex.Message, ex.StackTrace);
-            }
-        }
-        #endregion
 
         #region ExecuteSwitch
         /// <summary>

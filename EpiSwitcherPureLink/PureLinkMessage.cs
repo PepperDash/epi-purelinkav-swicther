@@ -17,10 +17,7 @@ namespace PureLinkPlugin
             if (String.IsNullOrEmpty(message))
                 return;
 
-            var textToSend = new StringBuilder(message);
-            textToSend.Append("!\r");
-
-            _message = textToSend.ToString();
+            _message = BuildCommandFromString(message);
         }
 
         public void Dispatch()
@@ -34,6 +31,14 @@ namespace PureLinkPlugin
         public override string ToString()
         {
             return _message.Trim();
+        }
+
+        public static string BuildCommandFromString(string command)
+        {
+            var textToSend = new StringBuilder(command);
+            textToSend.Append("!\r");
+
+            return textToSend.ToString();
         }
     }
 }
