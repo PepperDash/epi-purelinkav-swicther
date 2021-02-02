@@ -108,6 +108,7 @@
     <Compile Include="PureLinkIO.cs" />
     <Compile Include="PureLinkMessage.cs" />
     <Compile Include="PureLinkOutput.cs" />
+    <Compile Include="PureLinkRouteQueue.cs" />
     <None Include="Properties\ControlSystem.cfg" />
     <None Include="pure-link-configurationFile.json" />
   </ItemGroup>

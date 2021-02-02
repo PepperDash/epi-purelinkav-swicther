@@ -9,7 +9,7 @@ namespace PureLinkPlugin
 {
     public abstract class PureLinkIo : IKeyName
     {
-        protected PureLinkIo(string key, int index, PureLinkEntryConfig config)
+        protected PureLinkIo(string key, uint index, PureLinkEntryConfig config)
         {
             Key = key;
             Name = config.Name;
@@ -22,12 +22,12 @@ namespace PureLinkPlugin
         public string Name { get; private set; }
         public string VideoName { get; private set; }
         public string AudioName { get; private set; }
-        public int Index { get; private set; }
+        public uint Index { get; private set; }
     }
 
     public class PureLinkInput : PureLinkIo
     {
-        public PureLinkInput(string key, int index, PureLinkEntryConfig config) 
+        public PureLinkInput(string key, uint index, PureLinkEntryConfig config) 
             : base(key, index, config)
         {
             
