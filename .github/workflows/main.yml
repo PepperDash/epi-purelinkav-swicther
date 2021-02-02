@@ -1,4 +1,4 @@
-name: Master Build using Docker
+name: Main Build using Docker
 
 on:
   release:
