@@ -3,9 +3,9 @@ name: Main Build using Docker
 on:
   release:
     types:
-      - created
+      - published
     branches:
-      - master
+      - main
 env:
   # solution path doesn't need slashes unless there it is multiple folders deep
   # solution name does not include extension. .sln is assumed
