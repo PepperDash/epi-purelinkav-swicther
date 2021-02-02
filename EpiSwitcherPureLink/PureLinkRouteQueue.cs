@@ -7,6 +7,9 @@ using PepperDash_Essentials_Core.Queues;
 
 namespace PureLinkPlugin
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class PureLinkRouteQueue
     {
         private readonly IBasicCommunication _coms;
@@ -19,10 +22,15 @@ namespace PureLinkPlugin
         private readonly CCriticalSection _audioRouteLock = new CCriticalSection();
         private readonly CCriticalSection _videoRouteLock = new CCriticalSection();
 
-
         private readonly CTimer _videoRouteTimer;
         private readonly CTimer _audioRouteTimer;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="commandQueue"></param>
+        /// <param name="outputs"></param>
+        /// <param name="coms"></param>
         public PureLinkRouteQueue(IQueue<IQueueMessage> commandQueue, IEnumerable<PureLinkOutput> outputs,
                                   IBasicCommunication coms)
         {
@@ -104,7 +112,7 @@ namespace PureLinkPlugin
 
         private void ProcessAudioOutputsForRoutes()
         {
-            if (_audioFollowVideo)
+            if (AudioFollowVideo)
                 return;
 
             foreach (var output in _outputs.Where(x => x.AudioRouteRequested))
@@ -113,7 +121,7 @@ namespace PureLinkPlugin
 
         private void ProcessAudioRoute(PureLinkOutput output)
         {
-            if (!output.AudioRouteRequested)
+            if (!output.AudioRouteRequested || AudioFollowVideo)
                 return;
 
             var command = output.GetRequestedAudioCommand();

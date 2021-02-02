@@ -40,7 +40,7 @@ namespace PureLinkPlugin
         public const string PollVideo = ("*999?vallio");
         public const string PollAudio = ("*999?aallio");
         public const string ClearVideoRoutes = ("*999vdallio");
-        public const string ClearAudioRoutes = ("*999adallio");
+        public const string ClearAudioRoutes = ( "*999adallio" );
         public const string StartChar = "*";
         
         /// <summary>
@@ -286,6 +286,14 @@ namespace PureLinkPlugin
                 };
         }
 
+        /// <summary>
+        /// Called in between Pre and PostActivationActions when Activate() is called. 
+        ///             Override to provide addtitional setup when calling activation.  Overriding classes 
+        ///             do not need to call base.CustomActivate()
+        /// </summary>
+        /// <returns>
+        /// true if device activated successfully.
+        /// </returns>
         public override bool CustomActivate()
         {
             var socket = _comms as ISocketStatus;
@@ -636,7 +644,6 @@ namespace PureLinkPlugin
             #endregion links to bridge
         }
         
-        #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if video route should be called
         /// </summary>            
@@ -645,7 +652,6 @@ namespace PureLinkPlugin
             _routes.AllowVideoRouting = state;
         }
 
-        #warning Code below should be refactored
         /// <summary>
         /// Loop request dictionary skipping 0's and compare non 0's to current route dictionary to determine if audio route should be called
         /// </summary>            

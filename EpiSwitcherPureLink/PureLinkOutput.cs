@@ -9,6 +9,7 @@ using PepperDash.Essentials.Core;
 namespace PureLinkPlugin
 {
     /// <summary>
+    /// Class representing an output on a Purelink switch
     /// </summary>
     public class PureLinkOutput : PureLinkIo
     {
@@ -29,12 +30,12 @@ namespace PureLinkPlugin
 
         /// <summary>
         /// </summary>
-        /// <param name="key"></param>
-        /// <param name="index"></param>
-        /// <param name="config"></param>
-        /// <param name="deviceId"></param>
-        /// <param name="deviceModel"></param>
-        /// <param name="inputs"></param>
+        /// <param name="key">output key</param>
+        /// <param name="index">io number of output</param>
+        /// <param name="config">entry config</param>
+        /// <param name="deviceId">parent device id</param>
+        /// <param name="deviceModel">parent device model</param>
+        /// <param name="inputs">enumeration of available inputs</param>
         public PureLinkOutput(string key, uint index, PureLinkEntryConfig config, int deviceId, int deviceModel,
                               IEnumerable<PureLinkInput> inputs)
             : base(key, index, config)
@@ -69,11 +70,14 @@ namespace PureLinkPlugin
             CurrentlyRouteVideoName = new StringFeedback(key + "-CurrentVideoName",
                 () =>
                     {
-                        var result = inputs.FirstOrDefault(x => x.Index == CurrentlyRoutedVideoValue.IntValue);
+                        var result = inputs
+                            .FirstOrDefault(x => x.Index == CurrentlyRoutedVideoValue.IntValue);
+
                         return ( result == null ) ? "No Source" : result.VideoName;
                     });
 
             CurrentlyRoutedVideoValue.OutputChange += (sender, args) => CurrentlyRouteVideoName.FireUpdate();
+
             CurrentlyRoutedVideoValue.OutputChange +=
                 (sender, args) => Debug.Console(1, this, "Video Routed Value Update : '{0}'", args.IntValue);
             CurrentlyRouteVideoName.OutputChange +=
@@ -85,11 +89,14 @@ namespace PureLinkPlugin
             CurrentlyRouteAudioName = new StringFeedback(key + "-CurrentAudioName",
                 () =>
                     {
-                        var result = inputs.FirstOrDefault(x => x.Index == _currentlyRoutedAudio);
+                        var result = inputs
+                            .FirstOrDefault(x => x.Index == _currentlyRoutedAudio);
+
                         return ( result == null ) ? "No Source" : result.AudioName;
                     });
 
             CurrentlyRoutedAudioValue.OutputChange += (sender, args) => CurrentlyRouteAudioName.FireUpdate();
+
             CurrentlyRoutedAudioValue.OutputChange +=
                  (sender, args) => Debug.Console(1, this, "Audio Routed Value Update : '{0}'", args.IntValue);
             CurrentlyRouteAudioName.OutputChange +=
@@ -97,6 +104,7 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Returns true if an audio route has been requested
         /// </summary>
         public bool AudioRouteRequested
         {
@@ -104,22 +112,27 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// String feedback indicating currently routed audio input name
         /// </summary>
         public StringFeedback CurrentlyRouteAudioName { get; private set; }
 
         /// <summary>
+        /// String feedback indicating currently routed video input name
         /// </summary>
         public StringFeedback CurrentlyRouteVideoName { get; private set; }
 
         /// <summary>
+        /// Int feedback indicating currently routed audio input value
         /// </summary>
         public IntFeedback CurrentlyRoutedAudioValue { get; private set; }
 
         /// <summary>
+        /// Int feedback indicating currently routed video input value
         /// </summary>
         public IntFeedback CurrentlyRoutedVideoValue { get; private set; }
 
         /// <summary>
+        /// Returns true if a video route has been requested
         /// </summary>
         public bool VideoRouteRequested
         {
@@ -127,9 +140,10 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Gets poll string for current audio input
         /// </summary>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <returns>string for current audio input poll</returns>
+        /// <exception cref="Exception">Invalid Device Model</exception>
         public string GetCurrentAudioRoutePoll()
         {
             switch (_deviceModel)
@@ -151,9 +165,10 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Gets poll string for current video input
         /// </summary>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <returns>string for current video input poll</returns>
+        /// <exception cref="Exception">Invalid Device Model</exception>
         public string GetCurrentVideoRoutePoll()
         {
             switch (_deviceModel)
@@ -174,6 +189,12 @@ namespace PureLinkPlugin
             }
         }
 
+
+        /// <summary>
+        /// Gets command string to route requested audio input
+        /// </summary>
+        /// <returns>command or empty if none requested</returns>
+        /// <exception cref="Exception">Invalid Device Model</exception>
         public string GetRequestedAudioCommand()
         {
             var cmd = new StringBuilder();
@@ -207,8 +228,10 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Gets command string to route requested AudioVideo input
         /// </summary>
-        /// <returns></returns>
+        /// <returns>command or empty if none requested or !audioFollowsVideo</returns>
+        /// <exception cref="Exception">Invalid Device Model</exception>
         public string GetRequestedAudioVideoRouteCommand()
         {
             var cmd = new StringBuilder();
@@ -233,11 +256,18 @@ namespace PureLinkPlugin
                         inputToRoute,
                         Index));
                     break;
+                default:
+                    throw new Exception("Invalid device model");
             }
 
             return cmd.ToString();
         }
 
+        /// <summary>
+        /// Gets command string to route requested video input
+        /// </summary>
+        /// <returns>command or empty if none requested</returns>
+        /// <exception cref="Exception">Invalid Device Model</exception>
         public string GetRequestedVideoCommand()
         {
             var cmd = new StringBuilder();
@@ -270,8 +300,9 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
+        /// Checks the response string for input information and fires updates
         /// </summary>
-        /// <param name="response"></param>
+        /// <param name="response">response from switcher</param>
         public void ProcessResponse(string response)
         {
             if (!response.EndsWith(_responseEnding))
@@ -279,8 +310,8 @@ namespace PureLinkPlugin
 
             try
             {
-                response = response.Replace(_responseEnding, String.Empty);
                 Debug.Console(2, this, "Processing Response : {0}", response);
+                response = response.Replace(_responseEnding, String.Empty);
 
                 if (response.StartsWith(_audioVideoResponseStart))
                 {
@@ -299,7 +330,7 @@ namespace PureLinkPlugin
                     Debug.Console(2, this, "Received Video Switch FB");
                     response = response.Replace(_videoResponseStart, String.Empty);
 
-                    var currentVideoInput = Convert.ToInt16(response);
+                    var currentVideoInput = Convert.ToInt32(response);
                     UpdateCurrentVideoInput(currentVideoInput);
 
                     return;
@@ -310,7 +341,7 @@ namespace PureLinkPlugin
                     Debug.Console(2, this, "Received Audio Switch FB");
                     response = response.Replace(_audioResponseStart, String.Empty);
 
-                    var currentAudioInput = Convert.ToInt16(response);
+                    var currentAudioInput = Convert.ToInt32(response);
                     UpdateCurrentAudioInput(currentAudioInput);
 
                     return;
@@ -318,10 +349,10 @@ namespace PureLinkPlugin
 
                 if (response.StartsWith(_videoPollResponseStart))
                 {
-                    Debug.Console(2, this, "Received Video Switch FB");
+                    Debug.Console(2, this, "Received Video Poll FB");
                     response = response.Replace(_videoPollResponseStart, String.Empty);
 
-                    var currentVideoInput = Convert.ToInt16(response);
+                    var currentVideoInput = Convert.ToInt32(response);
                     UpdateCurrentVideoInput(currentVideoInput);
 
                     return;
@@ -329,7 +360,7 @@ namespace PureLinkPlugin
 
                 if (response.StartsWith(_audioPollResponseStart))
                 {
-                    Debug.Console(2, this, "Received Audio Switch FB");
+                    Debug.Console(2, this, "Received Audio Poll FB");
                     response = response.Replace(_audioPollResponseStart, String.Empty);
 
                     var currentAudioInput = Convert.ToInt16(response);
@@ -342,25 +373,37 @@ namespace PureLinkPlugin
             }
             catch (Exception ex)
             {
-                Debug.Console(0, this, Debug.ErrorLogLevel.Notice, "Caught an error processing the response {0}{1}{2}", response, ex.Message, ex.StackTrace);
+                Debug.Console(0, 
+                    this, 
+                    Debug.ErrorLogLevel.Notice, 
+                    "Caught an error processing the response {0}{1}{2}", 
+                    response, ex.Message, ex.StackTrace);
                 throw;
             }
         }
 
         /// <summary>
+        /// Request an updated input.  If routing is not enabled it will queue
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">input to requeset</param>
         public void RequestAudioRoute(int input)
         {
+            if (input == 0)
+                return;
+
             Debug.Console(1, this, "Requesting new Audio route : {0}", input);
             _requestedRoutedAudio = input;
         }
 
         /// <summary>
+        /// Request an updated input.  If routing is not enabled it will queue
         /// </summary>
-        /// <param name="input"></param>
+        /// <param name="input">input to requeset</param>
         public void RequestVideoRoute(int input)
         {
+            if (input == 0)
+                return;
+
             Debug.Console(1, this, "Requesting new video route : {0}", input);
             _requestedRoutedVideo = input;
         }

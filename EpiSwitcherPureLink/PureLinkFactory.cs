@@ -71,7 +71,7 @@ namespace PureLinkPlugin
 					return null;
 				}						
 
-				// TODO [ ] If your device is using a PepperDash.Core.eControlMethod supported enum, the snippet below will support standard comm methods
+				// TODO [X] If your device is using a PepperDash.Core.eControlMethod supported enum, the snippet below will support standard comm methods
 				// build the plugin device comms (for all other comms methods) & check for null			
 				var comms = CommFactory.CreateCommForDevice(dc);
 				if (comms != null) return new PureLinkDevice(dc.Key, dc.Name, propertiesConfig, comms);
