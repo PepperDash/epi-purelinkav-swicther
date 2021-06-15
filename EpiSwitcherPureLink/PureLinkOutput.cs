@@ -376,8 +376,9 @@ namespace PureLinkPlugin
                 Debug.Console(0, 
                     this, 
                     Debug.ErrorLogLevel.Notice, 
-                    "Caught an error processing the response {0}{1}{2}", 
+                    "Caught an error processing the response {0} {1}{2}", 
                     response, ex.Message, ex.StackTrace);
+
                 throw;
             }
         }
