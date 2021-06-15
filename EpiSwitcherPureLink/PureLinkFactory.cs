@@ -38,7 +38,7 @@ namespace PureLinkPlugin
 		{
 			// Set the minimum Essentials Framework Version
 			// TODO [ ] Update the Essentials minimum framework version which this plugin has been tested against
-			MinimumEssentialsFrameworkVersion = "1.6.6";
+			MinimumEssentialsFrameworkVersion = "1.9.0";
 
 			// In the constructor we initialize the list with the typenames that will build an instance of this device
 			// TODO [X] Update the TypeNames for the plugin being developed. Note TypeName is not case sensitive.           

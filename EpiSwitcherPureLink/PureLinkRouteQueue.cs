@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Crestron.SimplSharp;
 using PepperDash.Core;
-using PepperDash_Essentials_Core.Queues;
+using PepperDash.Essentials.Core.Queues;
 
 namespace PureLinkPlugin
 {
