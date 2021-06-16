@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Crestron.SimplSharp;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 
@@ -36,8 +35,12 @@ namespace PureLinkPlugin
         /// <param name="deviceId">parent device id</param>
         /// <param name="deviceModel">parent device model</param>
         /// <param name="inputs">enumeration of available inputs</param>
-        public PureLinkOutput(string key, uint index, PureLinkEntryConfig config, int deviceId, int deviceModel,
-                              IEnumerable<PureLinkInput> inputs)
+        public PureLinkOutput(string key, 
+            uint index,
+            PureLinkEntryConfig config, 
+            int deviceId, 
+            int deviceModel,
+            IEnumerable<PureLinkInput> inputs)
             : base(key, index, config)
         {
             _deviceId = deviceId;
@@ -67,13 +70,14 @@ namespace PureLinkPlugin
             CurrentlyRoutedVideoValue = new IntFeedback(key + "-CurrentVideoValue", 
                 () => _currentlyRoutedVideo == 0 ? 999 : _currentlyRoutedVideo);
 
+            const string noSource = "No Source";
             CurrentlyRouteVideoName = new StringFeedback(key + "-CurrentVideoName",
                 () =>
                     {
                         var result = inputs
                             .FirstOrDefault(x => x.Index == CurrentlyRoutedVideoValue.IntValue);
 
-                        return ( result == null ) ? "No Source" : result.VideoName;
+                        return (result == null) ? noSource : result.VideoName;
                     });
 
             CurrentlyRoutedVideoValue.OutputChange += (sender, args) => CurrentlyRouteVideoName.FireUpdate();
@@ -92,7 +96,7 @@ namespace PureLinkPlugin
                         var result = inputs
                             .FirstOrDefault(x => x.Index == _currentlyRoutedAudio);
 
-                        return ( result == null ) ? "No Source" : result.AudioName;
+                        return (result == null) ? noSource : result.AudioName;
                     });
 
             CurrentlyRoutedAudioValue.OutputChange += (sender, args) => CurrentlyRouteAudioName.FireUpdate();
