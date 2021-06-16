@@ -149,12 +149,12 @@ namespace PureLinkPlugin
             switch (_deviceModel)
             {
                 case 0:
-                    return string.Format("{0}{1}?AO{2:D2}",
+                    return string.Format("{0}{1}?AO{2:D2}!\r",
                         PureLinkDevice.StartChar,
                         _deviceId,
                         Index);
                 case 1:
-                    return string.Format("{0}{1}?AO{2:D3}",
+                    return string.Format("{0}{1}?AO{2:D3}!\r",
                         PureLinkDevice.StartChar,
                         _deviceId,
                         Index);
@@ -174,12 +174,12 @@ namespace PureLinkPlugin
             switch (_deviceModel)
             {
                 case 0:
-                    return string.Format("{0}{1}?VO{2:D2}",
+                    return string.Format("{0}{1}?VO{2:D2}!\r",
                         PureLinkDevice.StartChar,
                         _deviceId,
                         Index);
                 case 1:
-                    return string.Format("{0}{1}?VO{2:D3}",
+                    return string.Format("{0}{1}?VO{2:D3}!\r",
                         PureLinkDevice.StartChar,
                         _deviceId,
                         Index);
@@ -224,6 +224,7 @@ namespace PureLinkPlugin
                     throw new Exception("Invalid device model");
             }
 
+            cmd.Append("!\r");
             return cmd.ToString();
         }
 
@@ -260,6 +261,7 @@ namespace PureLinkPlugin
                     throw new Exception("Invalid device model");
             }
 
+            cmd.Append("!\r");
             return cmd.ToString();
         }
 
@@ -296,6 +298,7 @@ namespace PureLinkPlugin
                     throw new Exception("Invalid device model");
             }
 
+            cmd.Append("!\r");
             return cmd.ToString();
         }
 

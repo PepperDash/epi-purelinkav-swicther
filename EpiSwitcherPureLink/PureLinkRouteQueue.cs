@@ -14,7 +14,6 @@ namespace PureLinkPlugin
     {
         private readonly IBasicCommunication _coms;
         private readonly IEnumerable<PureLinkOutput> _outputs;
-        private readonly IQueue<IQueueMessage> _queue;
         private bool _allowAudioRouting;
         private bool _allowVideoRouting;
         private bool _audioFollowVideo;
@@ -31,10 +30,9 @@ namespace PureLinkPlugin
         /// <param name="commandQueue"></param>
         /// <param name="outputs"></param>
         /// <param name="coms"></param>
-        public PureLinkRouteQueue(IQueue<IQueueMessage> commandQueue, IEnumerable<PureLinkOutput> outputs,
+        public PureLinkRouteQueue(IEnumerable<PureLinkOutput> outputs,
                                   IBasicCommunication coms)
         {
-            _queue = commandQueue;
             _outputs = outputs;
             _coms = coms;
 
@@ -128,8 +126,7 @@ namespace PureLinkPlugin
             if (String.IsNullOrEmpty(command))
                 return;
 
-            var message = new PureLinkMessage(_coms, command);
-            _queue.Enqueue(message);
+            _coms.SendText(command);
         }
 
         private void ProcessVideoOutputsForRoutes()
@@ -148,8 +145,7 @@ namespace PureLinkPlugin
             if (String.IsNullOrEmpty(command))
                 return;
 
-            var message = new PureLinkMessage(_coms, command);
-            _queue.Enqueue(message);
+            _coms.SendText(command);
         }
     }
 }

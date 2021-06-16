@@ -49,7 +49,6 @@ namespace PureLinkPlugin
         public const int MaxIo = 72;
 
         private readonly StringResponseProcessor _responseProcessor;
-        private readonly IQueue<IQueueMessage> _commandQueue;
         private readonly IDictionary<uint, PureLinkInput> _inputs = new Dictionary<uint, PureLinkInput>();
         private readonly IDictionary<uint, PureLinkOutput> _outputs = new Dictionary<uint, PureLinkOutput>();
         private readonly PureLinkRouteQueue _routes;
@@ -207,11 +206,10 @@ namespace PureLinkPlugin
         public PureLinkDevice(string key, string name, PureLinkConfig config, IBasicCommunication comms)
             : base(key, name)
         {
-            Debug.Console(0, this, "Constructing new {0} instance", name);
+            Debug.Console(1, this, "Constructing new {0} instance", name);
 
             // TODO [X] Update the constructor as needed for the plugin device being developed
             _config = config;
-            _commandQueue = new GenericQueue(Key, 50);
             if (string.IsNullOrEmpty(_config.DeviceId))
             {
                 Debug.Console(0, this, Debug.ErrorLogLevel.Error, "Config DeviceId value invalid. Setting value to 999.");
@@ -272,18 +270,11 @@ namespace PureLinkPlugin
             InitializeInputNames(_config.Inputs);
             InitializeOutputNames(_config.Outputs);
 
-            _routes = new PureLinkRouteQueue(_commandQueue, _outputs.Values, _comms);
+            _routes = new PureLinkRouteQueue(_outputs.Values, _comms);
 
             Debug.Console(1, this, "Constructing new {0} instance complete", name);
             Debug.Console(1, new string('*', 80));
             Debug.Console(1, new string('*', 80));
-
-            CrestronEnvironment.ProgramStatusEventHandler += programEvent =>
-                {
-                    Debug.Console(1, "Received Program Status Event : {0}", programEvent.ToString());
-                    if (programEvent == eProgramStatusEventType.Stopping)
-                        _commsMonitor.Stop();
-                };
         }
 
         /// <summary>
@@ -453,8 +444,7 @@ namespace PureLinkPlugin
             if (string.IsNullOrEmpty(text)) 
                 return;
 
-            var message = new PureLinkMessage(_comms, text);
-            _commandQueue.Enqueue(message);
+            _comms.SendText(text);
         }
 
         /// <summary>
@@ -677,10 +667,9 @@ namespace PureLinkPlugin
             foreach (var pollToSend in _outputs
                 .Values
                 .Select(pureLinkOutput => pureLinkOutput.GetCurrentVideoRoutePoll())
-                .Where(poll => !String.IsNullOrEmpty(poll))
-                .Select(poll => new PureLinkMessage(_comms, poll))) 
+                .Where(poll => !String.IsNullOrEmpty(poll)))
                 {
-                    _commandQueue.Enqueue(pollToSend);
+                    _comms.SendText(pollToSend);
                 }
         }
 
@@ -692,10 +681,9 @@ namespace PureLinkPlugin
             foreach (var pollToSend in _outputs
                 .Values
                 .Select(pureLinkOutput => pureLinkOutput.GetCurrentAudioRoutePoll())
-                .Where(poll => !String.IsNullOrEmpty(poll))
-                .Select(poll => new PureLinkMessage(_comms, poll))) 
+                .Where(poll => !String.IsNullOrEmpty(poll)))
                 {
-                    _commandQueue.Enqueue(pollToSend);
+                    _comms.SendText(pollToSend);
                 }
         }
 
