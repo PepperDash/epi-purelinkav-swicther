@@ -12,15 +12,8 @@ namespace PureLinkPlugin
     /// </summary>
     public class PureLinkOutput : PureLinkIo
     {
-        private readonly string _audioPollResponseStart;
-        private readonly string _audioResponseStart;
-        private readonly string _audioVideoResponseStart;
         private readonly int _deviceId;
         private readonly int _deviceModel;
-
-        private readonly string _responseEnding;
-        private readonly string _videoPollResponseStart;
-        private readonly string _videoResponseStart;
 
         private int _currentlyRoutedAudio;
         private int _currentlyRoutedVideo;
@@ -45,27 +38,6 @@ namespace PureLinkPlugin
         {
             _deviceId = deviceId;
             _deviceModel = deviceModel;
-            _responseEnding = String.Format("O{0:D3}", index);
-
-            _audioVideoResponseStart = String.Format("{0}{1}sCI",
-                PureLinkDevice.StartChar,
-                _deviceId);
-
-            _videoResponseStart = String.Format("{0}{1}sVCI",
-                PureLinkDevice.StartChar,
-                _deviceId);
-
-            _audioResponseStart = String.Format("{0}{1}sACI",
-                PureLinkDevice.StartChar,
-                _deviceId);
-
-            _videoPollResponseStart = String.Format("{0}{1}s?VI",
-                PureLinkDevice.StartChar,
-                _deviceId);
-
-            _audioPollResponseStart = String.Format("{0}{1}s?AI",
-                PureLinkDevice.StartChar,
-                _deviceId);
 
             CurrentlyRoutedVideoValue = new IntFeedback(key + "-CurrentVideoValue", 
                 () => _currentlyRoutedVideo == 0 ? 999 : _currentlyRoutedVideo);
@@ -207,7 +179,7 @@ namespace PureLinkPlugin
 
             var inputToRoute = _requestedRoutedAudio == 999 ? 0 : _requestedRoutedAudio;
             _requestedRoutedAudio = 0;
-            cmd.Append(",");
+            //cmd.Append(",");
             switch (_deviceModel)
             {
                 case 0:
@@ -307,90 +279,6 @@ namespace PureLinkPlugin
         }
 
         /// <summary>
-        /// Checks the response string for input information and fires updates
-        /// </summary>
-        /// <param name="response">response from switcher</param>
-        public void ProcessResponse(string response)
-        {
-            if (!response.EndsWith(_responseEnding))
-                return;
-
-            try
-            {
-                Debug.Console(2, this, "Processing Response : {0}", response);
-                response = response.Replace(_responseEnding, String.Empty);
-
-                if (response.StartsWith(_audioVideoResponseStart))
-                {
-                    Debug.Console(2, this, "Received Audio-Video Switch FB");
-                    response = response.Replace(_audioVideoResponseStart, String.Empty);
-
-                    var currentAudioVideoInput = Convert.ToInt16(response);
-                    UpdateCurrentVideoInput(currentAudioVideoInput);
-                    UpdateCurrentAudioInput(currentAudioVideoInput);
-
-                    return;
-                }
-
-                if (response.StartsWith(_videoResponseStart))
-                {
-                    Debug.Console(2, this, "Received Video Switch FB");
-                    response = response.Replace(_videoResponseStart, String.Empty);
-
-                    var currentVideoInput = Convert.ToInt32(response);
-                    UpdateCurrentVideoInput(currentVideoInput);
-
-                    return;
-                }
-
-                if (response.StartsWith(_audioResponseStart))
-                {
-                    Debug.Console(2, this, "Received Audio Switch FB");
-                    response = response.Replace(_audioResponseStart, String.Empty);
-
-                    var currentAudioInput = Convert.ToInt32(response);
-                    UpdateCurrentAudioInput(currentAudioInput);
-
-                    return;
-                }
-
-                if (response.StartsWith(_videoPollResponseStart))
-                {
-                    Debug.Console(2, this, "Received Video Poll FB");
-                    response = response.Replace(_videoPollResponseStart, String.Empty);
-
-                    var currentVideoInput = Convert.ToInt32(response);
-                    UpdateCurrentVideoInput(currentVideoInput);
-
-                    return;
-                }
-
-                if (response.StartsWith(_audioPollResponseStart))
-                {
-                    Debug.Console(2, this, "Received Audio Poll FB");
-                    response = response.Replace(_audioPollResponseStart, String.Empty);
-
-                    var currentAudioInput = Convert.ToInt16(response);
-                    UpdateCurrentAudioInput(currentAudioInput);
-
-                    return;
-                }
-
-                Debug.Console(2, this, "Not sure what to do with this string : {0}", response);
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(0, 
-                    this, 
-                    Debug.ErrorLogLevel.Notice, 
-                    "Caught an error processing the response {0} {1}{2}", 
-                    response, ex.Message, ex.StackTrace);
-
-                throw;
-            }
-        }
-
-        /// <summary>
         /// Request an updated input.  If routing is not enabled it will queue
         /// </summary>
         /// <param name="input">input to requeset</param>
@@ -416,13 +304,13 @@ namespace PureLinkPlugin
             _requestedRoutedVideo = input;
         }
 
-        private void UpdateCurrentAudioInput(int input)
+        public void UpdateCurrentAudioInput(int input)
         {
             _currentlyRoutedAudio = input;
             CurrentlyRoutedAudioValue.FireUpdate();
         }
 
-        private void UpdateCurrentVideoInput(int input)
+        public void UpdateCurrentVideoInput(int input)
         {
             _currentlyRoutedVideo = input;
             CurrentlyRoutedVideoValue.FireUpdate();
