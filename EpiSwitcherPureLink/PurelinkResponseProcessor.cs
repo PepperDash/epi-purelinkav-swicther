@@ -59,15 +59,29 @@ namespace PureLinkPlugin
 
                 Debug.Console(2, _pureLinkDevice, "Not sure what to do with this {0}", response);
             }
+            catch (FormatException ex)
+            {
+                Debug.Console(0,
+                    _pureLinkDevice,
+                    Debug.ErrorLogLevel.Notice,
+                    "Caught an error processing the response:{0} {1}{2}",
+                    response, ex.Message, ex.InnerException);
+            }
+            catch (IndexOutOfRangeException ex)
+            {
+                Debug.Console(0,
+                    _pureLinkDevice,
+                    Debug.ErrorLogLevel.Notice,
+                    "Caught an error processing the response:{0} {1}{2}",
+                    response, ex.Message, ex.InnerException);
+            }
             catch (Exception ex)
             {
                 Debug.Console(0,
                     _pureLinkDevice,
                     Debug.ErrorLogLevel.Notice,
                     "Caught an error processing the response:{0} {1}{2}",
-                    response, ex.Message, ex.StackTrace);
-
-                throw;
+                    response, ex.Message, ex.InnerException);
             }
         }
 
