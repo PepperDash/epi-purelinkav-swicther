@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Crestron.SimplSharp;
 using Crestron.SimplSharpPro.DeviceSupport;
+using Crestron.SimplSharpPro.Diagnostics;
 using PepperDash.Core;
 using PepperDash.Essentials.Core;
 using PepperDash.Essentials.Core.Bridges;
@@ -57,9 +58,11 @@ namespace PureLinkPlugin
         /// </summary>
         public const int MaxIo = 72;
 
-        private readonly StringResponseProcessor _responseProcessor;
         private readonly IDictionary<uint, PureLinkInput> _inputs = new Dictionary<uint, PureLinkInput>();
         private readonly IDictionary<uint, PureLinkOutput> _outputs = new Dictionary<uint, PureLinkOutput>();
+
+        public IDictionary<uint, PureLinkOutput> Outputs { get { return _outputs; } }
+        public IDictionary<uint, PureLinkInput> Inputs { get { return _inputs; } } 
         private readonly PureLinkRouteQueue _routes;
     
         #endregion Constants
@@ -234,6 +237,9 @@ namespace PureLinkPlugin
 
             _pollTimer = new CTimer(o =>
                 {
+                    if (!SystemMonitor.ProgramInitialization.ProgramInitializationComplete)
+                        return;
+
                     var pollVideo = PureLinkMessage.BuildCommandFromString(PollVideo);
                     var pollAudio = PureLinkMessage.BuildCommandFromString(PollAudio);
 
@@ -282,7 +288,8 @@ namespace PureLinkPlugin
 
             // _comms gather for ASCII based API's that have a defined delimiter
             var commsGather = new CommunicationGather(_comms, CommsDelimiter);
-            _responseProcessor = new StringResponseProcessor(commsGather, ProcessResponse);
+            var purelinkResponseProcessor = new PurelinkResponseProcessor(this);
+            new StringResponseProcessor(commsGather, purelinkResponseProcessor.ProcessResponse);
 
             #endregion Communication data event handlers.  Comment out any that don't apply to the API type
 
@@ -299,11 +306,11 @@ namespace PureLinkPlugin
                 StartChar,
                 _config.DeviceId);
 
-            _videoPollResponseStart = String.Format("{0}{1}?\rVI",
+            _videoPollResponseStart = String.Format("{0}{1}s?VI",
                 StartChar,
                 _config.DeviceId);
 
-            _audioPollResponseStart = String.Format("{0}{1}?\rAI",
+            _audioPollResponseStart = String.Format("{0}{1}s?AI",
                 StartChar,
                 _config.DeviceId);
 
@@ -342,7 +349,7 @@ namespace PureLinkPlugin
                     return;
                 }
 
-                _pollTimer.Reset(250, 10340);
+                _pollTimer.Reset(10000, 30000);
             };
 
             _commsMonitor.Start();
@@ -423,125 +430,6 @@ namespace PureLinkPlugin
 
             if (StatusFeedback != null)
                 StatusFeedback.FireUpdate();
-        }
-
-        private void ProcessResponse(string response)
-        {
-            if (string.IsNullOrEmpty(response))
-                return;
-
-            if (CheckResponseForError(response))
-                return;
-
-            try
-            {
-                Debug.Console(2, this, "Processing response : {0}", response);
-
-                if (response.StartsWith(_videoResponseStart))
-                {
-                    var videoResponse = response.Replace(_videoResponseStart, string.Empty).Split(new[] { 'O' });
-                    var outputIndex = Convert.ToUInt32(videoResponse[1]);
-                    PureLinkOutput output;
-                    if (!_outputs.TryGetValue(outputIndex, out output))
-                        return;
-
-                    var inputIndex = Convert.ToInt32(videoResponse[0]);
-                    output.UpdateCurrentVideoInput(inputIndex);
-                    return;
-                }
-
-
-                if (response.StartsWith(_audioResponseStart))
-                {
-                    var audioResponse = response.Replace(_audioResponseStart, string.Empty).Split(new[] { 'O' });
-                    var outputIndex = Convert.ToUInt32(audioResponse[1]);
-                    PureLinkOutput output;
-                    if (!_outputs.TryGetValue(outputIndex, out output))
-                        return;
-
-                    var inputIndex = Convert.ToInt32(audioResponse[0]);
-                    output.UpdateCurrentAudioInput(inputIndex);
-                    return;
-                }
-
-
-                if (response.StartsWith(_videoPollResponseStart))
-                {
-                    var videoPollResponses = response.Replace(_videoPollResponseStart, string.Empty).Split(new[] { ',' });
-
-                    foreach (var videoPollResponse in videoPollResponses)
-                    {
-                        var outputIndex = Convert.ToUInt32(videoPollResponse[1]);
-                        PureLinkOutput output;
-                        if (!_outputs.TryGetValue(outputIndex, out output))
-                            continue;
-
-                        var inputIndex = Convert.ToInt32(videoPollResponse[0]);
-                        output.UpdateCurrentVideoInput(inputIndex);
-                    }
-
-                    return;
-                }
-
-                if (response.StartsWith(_audioPollResponseStart))
-                {
-                    var audioPollResponses = response.Replace(_audioPollResponseStart, string.Empty).Split(new[] { ',' });
-
-                    foreach (var audioPollResponse in audioPollResponses)
-                    {
-                        var outputIndex = Convert.ToUInt32(audioPollResponse[1]);
-                        PureLinkOutput output;
-                        if (!_outputs.TryGetValue(outputIndex, out output))
-                            continue;
-
-                        var inputIndex = Convert.ToInt32(audioPollResponse[0]);
-                        output.UpdateCurrentAudioInput(inputIndex);
-                    }
-
-                    return;
-                }
-
-                if (response.StartsWith(_audioVideoResponseStart))
-                {
-                    var videoResponse = response.Replace(_audioVideoResponseStart, string.Empty).Split(new[] { 'O' });
-                    var outputIndex = Convert.ToUInt32(videoResponse[1]);
-                    PureLinkOutput output;
-                    if (!_outputs.TryGetValue(outputIndex, out output))
-                        return;
-
-                    var inputIndex = Convert.ToInt32(videoResponse[0]);
-                    output.UpdateCurrentVideoInput(inputIndex);
-                    output.UpdateCurrentAudioInput(inputIndex);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Console(0,
-                    this,
-                    Debug.ErrorLogLevel.Notice,
-                    "Caught an error processing the response {0} {1}{2}",
-                    response, ex.Message, ex.StackTrace);
-
-                throw;
-            }
-        }
-
-        private bool CheckResponseForError(string data)
-        {
-            data = data.ToLower();
-            if (data.ToLower().Contains("command code error"))
-            {
-                Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Command Code Error");
-                return true;
-            }
-
-            if (data.ToLower().Contains("router id error"))
-            {
-                Debug.Console(0, this, Debug.ErrorLogLevel.Error, "ProcessResponse: Router ID Error");
-                return true;
-            }
-
-            return false;
         }
 
         // TODO [X] Delete below if not using ASCII based API
@@ -777,13 +665,9 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollVideo()
         {
-            foreach (var pollToSend in _outputs
-                .Values
-                .Select(pureLinkOutput => pureLinkOutput.GetCurrentVideoRoutePoll())
-                .Where(poll => !String.IsNullOrEmpty(poll)))
-                {
-                    _comms.SendText(pollToSend);
-                }
+            var pollVideo = PureLinkMessage.BuildCommandFromString(PollVideo);
+
+            _comms.SendText(pollVideo);
         }
 
         /// <summary>
@@ -791,13 +675,8 @@ namespace PureLinkPlugin
         /// </summary>
         public void SetPollAudio()
         {
-            foreach (var pollToSend in _outputs
-                .Values
-                .Select(pureLinkOutput => pureLinkOutput.GetCurrentAudioRoutePoll())
-                .Where(poll => !String.IsNullOrEmpty(poll)))
-                {
-                    _comms.SendText(pollToSend);
-                }
+            var pollAudio = PureLinkMessage.BuildCommandFromString(PollAudio);
+            _comms.SendText(pollAudio);
         }
 
         /// <summary>
@@ -940,6 +819,32 @@ namespace PureLinkPlugin
         {
             get { return _commsMonitor; }
         }
+
+        public string VideoResponseStart
+        {
+            get { return _videoResponseStart; }
+        }
+
+        public string AudioResponseStart
+        {
+            get { return _audioResponseStart; }
+        }
+
+        public string VideoPollResponseStart
+        {
+            get { return _videoPollResponseStart; }
+        }
+
+        public string AudioPollResponseStart
+        {
+            get { return _audioPollResponseStart; }
+        }
+
+        public string AudioVideoResponseStart
+        {
+            get { return _audioVideoResponseStart; }
+        }
+
         #endregion
     }
 }
