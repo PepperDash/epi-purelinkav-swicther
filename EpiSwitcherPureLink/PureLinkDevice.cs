@@ -237,9 +237,6 @@ namespace PureLinkPlugin
 
             _pollTimer = new CTimer(o =>
                 {
-                    if (!SystemMonitor.ProgramInitialization.ProgramInitializationComplete)
-                        return;
-
                     var pollVideo = PureLinkMessage.BuildCommandFromString(PollVideo);
                     var pollAudio = PureLinkMessage.BuildCommandFromString(PollAudio);
 
@@ -277,21 +274,13 @@ namespace PureLinkPlugin
 
             _comms = comms;
             var socket = _comms as ISocketStatus;
-
+            if (socket != null)
+                socket.ConnectionChange += socket_ConnectionChange;
             // The comms monitor polls your device
             // The _commsMonitor.Status only changes based on the values placed in the Poll times
             // _commsMonitor.StatusChange is the poll status changing not the TCP/IP isOnline status changing
             _commsMonitor = new GenericCommunicationMonitor(this, _comms, _config.PollTimeMs, _config.WarningTimeoutMs, _config.ErrorTimeoutMs, Poll);
-            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;    
-
-            #region Communication data event handlers.  Comment out any that don't apply to the API type
-
-            // _comms gather for ASCII based API's that have a defined delimiter
-            var commsGather = new CommunicationGather(_comms, CommsDelimiter);
-            var purelinkResponseProcessor = new PurelinkResponseProcessor(this);
-            new StringResponseProcessor(commsGather, purelinkResponseProcessor.ProcessResponse);
-
-            #endregion Communication data event handlers.  Comment out any that don't apply to the API type
+            OnlineFeedback = _commsMonitor.IsOnlineFeedback;    
 
             InitializeInputNames(_config.Inputs);
             InitializeOutputNames(_config.Outputs);
@@ -318,9 +307,51 @@ namespace PureLinkPlugin
                 StartChar,
                 _config.DeviceId);
 
+            DeviceManager.AllDevicesActivated += (sender, args) =>
+            {
+                try
+                {
+                    var purelinkResponseProcessor = new PurelinkResponseProcessor(this);
+                    var commsGather = new CommunicationGather(_comms, CommsDelimiter);
+                    var queue = new GenericQueue(Key, 500);
+
+                    commsGather.LineReceived +=
+                        (o, textArgs) =>
+                            queue.Enqueue(new PurelinkProcessResponseMessage(purelinkResponseProcessor,
+                                textArgs.Text));
+
+                    _commsMonitor.Start();
+                }
+                catch (Exception ex)
+                {
+                    Debug.Console(0,
+                        this,
+                        Debug.ErrorLogLevel.Error,
+                        "Error handling all devices activated : {0}",
+                        ex.Message);
+                }
+            };
+
             Debug.Console(1, this, "Constructing new {0} instance complete", name);
             Debug.Console(1, new string('*', 80));
             Debug.Console(1, new string('*', 80));
+        }
+
+        class PurelinkProcessResponseMessage : IQueueMessage
+        {
+            private readonly PurelinkResponseProcessor _processor;
+            private readonly string _response;
+
+            public PurelinkProcessResponseMessage(PurelinkResponseProcessor processor, string response)
+            {
+                _processor = processor;
+                _response = response;
+            }
+
+            public void Dispatch()
+            {
+                _processor.ProcessResponse(_response);
+            }
         }
 
         /// <summary>
@@ -333,14 +364,6 @@ namespace PureLinkPlugin
         /// </returns>
         public override bool CustomActivate()
         {
-            var socket = _comms as ISocketStatus;
-            OnlineFeedback = (socket != null) ? ConnectFeedback : _commsMonitor.IsOnlineFeedback;
-            if (socket != null)
-            {
-                // device comms is IP **ELSE** device comms is RS232
-                socket.ConnectionChange += socket_ConnectionChange;
-            }
-
             _commsMonitor.StatusChange += (sender, args) =>
             {
                 if (!_commsMonitor.IsOnline)
@@ -352,7 +375,6 @@ namespace PureLinkPlugin
                 _pollTimer.Reset(10000, 30000);
             };
 
-            _commsMonitor.Start();
             return base.CustomActivate();
         }
 
@@ -666,7 +688,6 @@ namespace PureLinkPlugin
         public void SetPollVideo()
         {
             var pollVideo = PureLinkMessage.BuildCommandFromString(PollVideo);
-
             _comms.SendText(pollVideo);
         }
 
