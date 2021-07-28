@@ -11,6 +11,26 @@ namespace PureLinkPlugin
         #region Digital
 
         /// <summary>
+        /// Plugin online join map
+        /// </summary>
+        /// <remarks>
+        /// Reports the plugin online sate to SiMPL as a boolean value
+        /// </remarks>
+        [JoinName("IsOnline")]
+        public JoinDataComplete IsOnline = new JoinDataComplete(
+            new JoinData
+            {
+                JoinNumber = 1,
+                JoinSpan = 1
+            },
+            new JoinMetadata
+            {
+                Description = "Is Online",
+                JoinCapabilities = eJoinCapabilities.ToSIMPL,
+                JoinType = eJoinType.Digital
+            });
+
+        /// <summary>
         /// Plugin request for video route
         /// </summary>
         /// <remarks>

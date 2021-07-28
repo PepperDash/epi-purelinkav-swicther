@@ -38,7 +38,7 @@ namespace PureLinkPlugin
 		{
 			// Set the minimum Essentials Framework Version
 			// TODO [ ] Update the Essentials minimum framework version which this plugin has been tested against
-			MinimumEssentialsFrameworkVersion = "1.6.6";
+			MinimumEssentialsFrameworkVersion = "1.9.0";
 
 			// In the constructor we initialize the list with the typenames that will build an instance of this device
 			// TODO [X] Update the TypeNames for the plugin being developed. Note TypeName is not case sensitive.           
@@ -71,7 +71,7 @@ namespace PureLinkPlugin
 					return null;
 				}						
 
-				// TODO [ ] If your device is using a PepperDash.Core.eControlMethod supported enum, the snippet below will support standard comm methods
+				// TODO [X] If your device is using a PepperDash.Core.eControlMethod supported enum, the snippet below will support standard comm methods
 				// build the plugin device comms (for all other comms methods) & check for null			
 				var comms = CommFactory.CreateCommForDevice(dc);
 				if (comms != null) return new PureLinkDevice(dc.Key, dc.Name, propertiesConfig, comms);
