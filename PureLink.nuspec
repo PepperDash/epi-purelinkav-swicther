@@ -12,12 +12,12 @@
     <license type="expression">MIT</license>
     <!-- Update projectUrl with the actual URL of the plugin repo-->
     <projectUrl>https://github.com/PepperDash-Engineering/epi-switcher-pure-link</projectUrl>
-    <copyright>Copyright 2021</copyright>
+    <copyright>Copyright 2022</copyright>
     <!-- Update description-->
     <description>Pure Link Matrix Switcher</description>
-    <tags>crestron 3series 4series</tags>
+    <tags>crestron 3series 4series purelink switcher</tags>
     <!-- Update repository url with the actual URL of the plugin repo-->
-    <repository type="git" url="https://github.com/PepperDash-Engineering/epi-switcher-pure-link"/>
+    <repository type="git" url="https://github.com/PepperDash/epi-switcher-pure-link"/>
   </metadata>
     <files>
       <file src="**" target="lib\net35"/>

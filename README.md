@@ -1,28 +1,18 @@
-# Pure Link Plugin
+![PepperDash Logo](/images/logo_pdt_no_tagline_600.png)
+## License
+Provided under MIT license
+# PepperDash Essentials Pure Link Plugin (c) 2022
+
+This repo contains a plugin for use with [PepperDash Essentials](https://github.com/PepperDash/Essentials). This plugin enables Essentials to communicate with and control a Pure Link switcher via TCP/IP.
 
 The Pure Link Plugin provides device control utilizing the configuration object defined in this document.
 
 ## Disclaimer
 
-This was my first EPI which was built and tested on the bench with a Pure-Link Media Axis-20 (20x20) switcher using TCP/IP as the control method. This EPI was only designed for TCP/IP Crestron integration (RS-232/serial control not tested nor suggested). The EPI handles two forms of API calls using the configuration 'Model' object detailed below. **The SIMPL Windows bridge analog video and audio request signals must use the value of '999' to trigger a route to clear as the value of 0 is not evaluated.** See details below regarding development environment.
+This EPI was built and tested with a Pure-Link Media Axis-20 (20x20) switcher using TCP/IP as the control method. This EPI was only designed for TCP/IP Crestron integration (RS-232/serial control not tested nor suggested). The EPI handles two forms of API calls using the configuration 'Model' object detailed below. **The SIMPL Windows bridge analog video and audio request signals must use the value of '999' to trigger a route to clear as the value of 0 is not evaluated.** See details below regarding development environment.
 
-## Installation
-
-The *.cplz output of this plugin needs to be loaded to the processor in the corresponding program folder:
-
-```
-/USER/program[X]/plugins/
-```
-
-## Configuration
-
-An example configuration is provided to assist in implementation.
-
-### Device Configuration
-
-The device configuration provides an example of the Pure Link device, control method, sources, and destinations.
-
-```
+### Essentials Device Configuration
+```json
 {
 	"key": "pure-link-1",
 	"name": "Pure Link",
@@ -175,11 +165,13 @@ The device configuration provides an example of the Pure Link device, control me
 }
 ```
 
-### Bridge Configuration
+## Device Bridging
+
+### Essentials Device Bridge Configuration
 
 It is important to note the Pure Link Plugin is built on the Essentials Plugin Template and uses the **eiscApiAdvanced** type.  The following configuration is an example of the Bridge configuration.
 
-```
+```json
 {
 	{
 		"key": "app1-switcher-bridge-1",
@@ -206,8 +198,11 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 	}
 }
 ```
+For more configuration information, see the [PepperDash Essentials wiki](https://github.com/PepperDash/Essentials/wiki).
 
-## SiMPL Bridge Joins
+### Essentials Bridge Join Map
+
+The join map below documents the commands implemented in this plugin.
 
 ### Digitals
 | dig-o            | I/O | dig-i                    |
@@ -224,7 +219,7 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 | Clear Audio      | 16  |                          |
 
 
-## Analogs
+### Analogs
 | an_o                             | I/O       | an_i                               |
 |----------------------------------|-----------|------------------------------------|
 |                                  | 1         | Communication Status               |
@@ -233,7 +228,7 @@ It is important to note the Pure Link Plugin is built on the Essentials Plugin T
 | Output001-XXX	Audio Input Select | 301-MAXIO | Output001-XXX Audio Input Feedback |
 
 
-## Serials
+### Serials
 | serial-o | I/O        | serial-i                                |
 |----------|------------|-----------------------------------------|
 |          | 1          | Switcher Name                           |
